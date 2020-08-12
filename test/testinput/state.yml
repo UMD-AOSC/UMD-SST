@@ -1,0 +1,11 @@
+geometry:
+  # insert other model specific things here
+
+state test:
+  norm file: 0.0
+  tolerance: 1.0e-12
+  date: &date 2018-04-15T00:00:00Z
+  statefile:
+    date: *date
+    state variables: &state_vars [statevar1, statevar2]
+    # insert other model specific things here

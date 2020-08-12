@@ -1,0 +1,5 @@
+geometry:
+  # insert other model specific things here
+
+inc variables: [var1, var2]
+test date: 2018-04-15T00:00:00Z
