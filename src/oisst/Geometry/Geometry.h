@@ -11,8 +11,12 @@
 #include <ostream>
 #include <string>
 
-#include "eckit/mpi/Comm.h"
+#include <memory>
 
+#include "atlas/functionspace.h"
+#include "atlas/field.h"
+
+#include "eckit/mpi/Comm.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
@@ -27,11 +31,9 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
 namespace oisst {
-
   // Geometry class
-  class Geometry : public util::Printable,
-                   private util::ObjectCounter<Geometry> {
-   public:
+  class Geometry : public util::Printable, private util::ObjectCounter<Geometry> {
+  public:
     static const std::string classname() {return "oisst::Geometry";}
 
     // constructors and destructor
@@ -46,10 +48,17 @@ namespace oisst {
     // TODO(template_impl) GeometryIterator begin() const;
     // TODO(template_impl) GeometryIterator end() const;
 
-   private:
-    void print(std::ostream &) const;
+//  atlas::FunctionSpace* atlasFunctionSpace() const { return atlasFunctionSpace_.get(); }
+    atlas::functionspace::StructuredColumns* atlasFunctionSpace() const { return atlasFunctionSpace_.get(); }
+    atlas::FieldSet* atlasFieldSet() const { return atlasFieldSet_.get(); }
 
+  private:
+    void print(std::ostream &) const;
     const eckit::mpi::Comm & comm_;
+
+    
+    std::unique_ptr<atlas::functionspace::StructuredColumns> atlasFunctionSpace_;
+    std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 
