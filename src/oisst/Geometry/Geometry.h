@@ -34,7 +34,7 @@ namespace oisst {
   // Geometry class
   class Geometry : public util::Printable,
                    private util::ObjectCounter<Geometry> {
-  public:
+   public:
     static const std::string classname() {return "oisst::Geometry";}
 
     // constructors and destructor
@@ -56,11 +56,12 @@ namespace oisst {
       return atlasFieldSet_.get();
     }
 
-  private:
+   private:
     void print(std::ostream &) const;
     const eckit::mpi::Comm & comm_;
 
-    std::unique_ptr<atlas::functionspace::StructuredColumns> atlasFunctionSpace_;
+    std::unique_ptr<atlas::functionspace::StructuredColumns>
+      atlasFunctionSpace_;
     std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst

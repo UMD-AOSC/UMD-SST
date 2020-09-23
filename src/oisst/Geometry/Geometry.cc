@@ -30,8 +30,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Geometry::Geometry(const Geometry & other) : comm_(other.comm_) {
-    atlasFunctionSpace_.reset(
-      new atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
+    atlasFunctionSpace_.reset(new
+      atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
       atlas::option::halo(0)));
 
     atlasFieldSet_.reset(new atlas::FieldSet());
@@ -50,7 +50,8 @@ namespace oisst {
   void Geometry::print(std::ostream & os) const {
     int nx, ny;
     ny = static_cast<int>(atlasFunctionSpace()->grid().ny());
-    nx = static_cast<int>(((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx());
+    nx = static_cast<int>(
+      ((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx() );
 
     os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
   }
