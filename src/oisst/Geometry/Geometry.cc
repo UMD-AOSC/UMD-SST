@@ -17,23 +17,22 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & comm) : comm_(comm) {
-  //util::abor1_cpp("Geometry::Geometry() needs to be implemented.", __FILE__, __LINE__);
-    
-    atlas::RegularLonLatGrid atlasRllGrid("Slat360x180");
-    atlasFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(atlasRllGrid, 
-                                  atlas::option::halo(0)));
-    
+  Geometry::Geometry(const eckit::Configuration & conf,
+                     const eckit::mpi::Comm & comm) : comm_(comm) {
+    atlas::RegularLonLatGrid atlasRllGrid(conf.getString("grid"));
+    atlasFunctionSpace_.reset(
+      new atlas::functionspace::StructuredColumns(atlasRllGrid,
+      atlas::option::halo(0)));
+
     atlasFieldSet_.reset(new atlas::FieldSet());
   }
 
 // ----------------------------------------------------------------------------
 
   Geometry::Geometry(const Geometry & other) : comm_(other.comm_) {
-  //util::abor1_cpp("Geometry::Geometry() needs to be implemented.", __FILE__, __LINE__);
-
-    atlasFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(), 
-                                  atlas::option::halo(0)));
+    atlasFunctionSpace_.reset(
+      new atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
+      atlas::option::halo(0)));
 
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int ifield = 0; ifield < other.atlasFieldSet_->size(); ifield++) {
@@ -44,24 +43,16 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  Geometry::~Geometry() {
-  //util::abor1_cpp("Geometry::~Geometry() needs to be implemented.", __FILE__, __LINE__);
-  
-    
-  }
+  Geometry::~Geometry() {}
 
 // ----------------------------------------------------------------------------
 
   void Geometry::print(std::ostream & os) const {
-  //util::abor1_cpp("Geometry::print() needs to be implemented.", __FILE__, __LINE__);
-    os << "Geometry: " << "(TODO, print diagnostic info about the geometry here)" << std::endl;
-
     int nx, ny;
-  //double dx, dy; 
-    ny = int(atlasFunctionSpace()->grid().ny());
-    nx = int(((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx()); 
-    
-    os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;  
+    ny = static_cast<int>(atlasFunctionSpace()->grid().ny());
+    nx = static_cast<int>(((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx());
+
+    os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
   }
 
 // ----------------------------------------------------------------------------
