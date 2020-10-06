@@ -113,9 +113,15 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  void State::accumul(const double &, const State &) {
-    util::abor1_cpp("State::accumul() needs to be implemented.",
-                     __FILE__, __LINE__);
+  void State::accumul(const double &zz, const State &rhs) {
+  //util::abor1_cpp("State::accumul() needs to be implemented.",
+  //                 __FILE__, __LINE__);
+
+    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto rhs_field_data = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
+    field_data = field_data + zz*rhs_field_data;
+
+    return; 
   }
 
 // ----------------------------------------------------------------------------
