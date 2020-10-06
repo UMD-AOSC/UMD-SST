@@ -1,11 +1,11 @@
 geometry:
-  # insert other model specific things here
+  grid: S360x180
 
 state test:
   norm file: 0.0
   tolerance: 1.0e-12
-  date: &date 2018-04-15T00:00:00Z
+  date: &date 1985-01-01T12:00:00Z
   statefile:
     date: *date
-    state variables: &state_vars [statevar1, statevar2]
-    # insert other model specific things here
+    filename: 19850101_regridded_sst_0_360.nc
+    state variables: &state_vars [sst]

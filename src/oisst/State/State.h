@@ -68,8 +68,12 @@ namespace oisst {
     util::DateTime & validTime() { return time_; }
 
     // other accessors
-    boost::shared_ptr<const Geometry> geometry() const;
+    boost::shared_ptr<const Geometry> geometry() const {return geom_;}
     const oops::Variables & variables() const { return vars_; }
+
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
+      return atlasFieldSet_;
+    }
 
    private:
     void print(std::ostream &) const;
@@ -77,6 +81,8 @@ namespace oisst {
     boost::shared_ptr<const Geometry> geom_;
     oops::Variables vars_;
     util::DateTime time_;
+
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 
