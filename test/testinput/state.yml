@@ -1,11 +1,15 @@
 geometry:
   grid: S360x180
+  domain:
+    type: global
+    west: -180
 
 state test:
   norm file: 0.0
   tolerance: 1.0e-12
   date: &date 1985-01-01T12:00:00Z
+  read_from_file: 1
   statefile:
     date: *date
-    filename: 19850101_regridded_sst_0_360.nc
+    filename: 19850101_regridded_sst.nc
     state variables: &state_vars [sst]

@@ -7,6 +7,9 @@
 
 #include <numeric>
 #include <cmath>
+#include <string>
+
+#include <netcdf>
 
 #include "oisst/Geometry/Geometry.h"
 #include "oisst/State/State.h"
@@ -17,9 +20,13 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
+
+// using namespace netCDF;
+
 
 namespace oisst {
 
@@ -163,7 +170,34 @@ namespace oisst {
   // util::abor1_cpp("State::read() needs to be implemented.",
   //                 __FILE__, __LINE__);
 
-    
+    int iread = 0, lon = 0, lat = 0, bc = 0; 
+    int nx, ny;  // ncid, lon_id, lat_id, var_id;
+    std::string sdate, filename, record; 
+
+    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+
+    if (conf.has("read_from_file"))
+      iread = conf.getInt("read_from_file")
+
+    if (iread == 0) {  // Ligang: invent field
+      oops::Log::warning() << "State::read: inventing field" << std::endl;
+      field_data = 300.0 //Ligang: WARNING, will change to use e.g. climatology
+    }
+    else { // read field from file
+      // get filename
+      if (!conf.get("filename", filename))
+        util::aborl_cpp("Get filename failed.", __FILE__, __LINE__)
+      
+      // open netCDF file
+      NcFile file(filename.c_str(), NcFile::ReadOnly);
+      if (!file.is_valid())
+        util::aborl_cpp("Open netCDF file failed.", __FILE__, __LINE__)
+
+      // get file dimensions
+
+
+    }
+
   }
 
 // ----------------------------------------------------------------------------
