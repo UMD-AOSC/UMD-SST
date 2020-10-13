@@ -11,5 +11,5 @@ state test:
   read_from_file: 1
   statefile:
     date: *date
-    filename: 19850101_regridded_sst.nc
+    filename: /glade/scratch/lgchen/data/SST_ML/ESA_SST_CCI/L4_Analysis_CDRv2.1_Regrided_1x1/nc_180/19850101_regridded_sst.nc
     state variables: &state_vars [sst]
