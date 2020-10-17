@@ -8,6 +8,7 @@
 #include <numeric>
 #include <cmath>
 #include <string>
+#include <vector>
 
 #include <netcdf>
 
@@ -17,6 +18,8 @@
 #include "eckit/config/Configuration.h"
 
 #include "atlas/field.h"
+#include "atlas/array.h"
+#include "atlas/option.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
@@ -25,7 +28,9 @@
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
 
-// using namespace netCDF;
+using namespace netCDF;
+using atlas::array::make_view;
+using atlas::option::name;
 
 
 namespace oisst {
@@ -36,7 +41,7 @@ namespace oisst {
     : geom_(new Geometry(geom)), time_(conf.getString("date")),
       vars_(conf, "state variables") {
 
-    if (var_.size() != 1) {
+    if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
                        __FILE__, __LINE__);
     }
@@ -44,8 +49,8 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
-                         atlas::field::name(var));
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(name(var));
+      
       atlasFieldSet_->add(fld); 
     }
   }
@@ -56,7 +61,7 @@ namespace oisst {
                const util::DateTime & time)
     : geom_(new Geometry(geom)), time_(time), vars_(vars) {
 
-    if (var_.size() != 1) {
+    if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
                       __FILE__, __LINE__);
     }
@@ -65,7 +70,7 @@ namespace oisst {
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
-                         atlas::field::name(var));
+                         name(var));
       atlasFieldSet_->add(fld); 
     }   
   }
@@ -76,7 +81,7 @@ namespace oisst {
     : geom_(new Geometry(geom)), time_(other.time_), vars_(other.vars_) {
     // Change state resolution
 
-    if (var_.size() != 1) {
+    if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
                       __FILE__, __LINE__);
     }
@@ -86,7 +91,7 @@ namespace oisst {
       std::string var = vars_[i];
       // Ligang: should be copied from "other"?
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
-                         atlas::field::name(var));
+                         name(var));
       atlasFieldSet_->add(fld); 
     }
   }
@@ -97,7 +102,7 @@ namespace oisst {
     : geom_(new Geometry(*other.geom_)), time_(other.time_),
       vars_(other.vars_) {
 
-    if (var_.size() != 1) {
+    if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
                        __FILE__, __LINE__);
     }
@@ -106,7 +111,7 @@ namespace oisst {
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
-                         atlas::field::name(var));
+                         name(var));
       atlasFieldSet_->add(fld); 
     }    
   }
@@ -135,7 +140,13 @@ namespace oisst {
   void State::accumul(const double &zz, const State &rhs) {
     auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
     auto rhs_field_data = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
-    field_data = field_data + zz*rhs_field_data;
+  //field_data = field_data + zz*rhs_field_data;
+    // Ligang: return size_halo_?
+    size_t size = geom_->atlasFunctionSpace()->size();
+    oops::Log::info() << "size from State::accumul: " << size << std::endl;
+    for (size_t jnode = 0; jnode < size; jnode++) {
+      field_data(jnode) = field_data(jnode) + zz*rhs_field_data(jnode);
+    }
 
     return; 
   }
@@ -150,8 +161,14 @@ namespace oisst {
     auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
     ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
     nx = static_cast<int>(
-      ((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx() ); 
-    s = std::inner_product(field_data, field_data+ny*nx, field_data, 0);
+      ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
+    if (geom_->atlasFunctionSpace()->size() != ny*nx)
+      util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);     
+
+    // Ligang: undefined operator "+" for field_data+ny*nx;
+  //s = std::inner_product(field_data, field_data+ny*nx, field_data, 0);
+    for (int jnode = 0; jnode < ny*nx; jnode++)
+      s += field_data(jnode)*field_data(jnode);
     norm = sqrt(s/(1.0*ny*nx)); 
  
     return norm;
@@ -163,7 +180,10 @@ namespace oisst {
     // Ligang: just consider 1 var for now
     //atlasFieldSet_->field(0).array() = 0.0
     auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-    field_data = 0.0;
+
+  //field_data = 0.0; // Ligang: undefined operator "="!
+    for (int i = 0; i < geom_->atlasFunctionSpace()->size(); i++)
+      field_data(i) = 0.0; 
   }
 
 // ----------------------------------------------------------------------------
@@ -180,36 +200,42 @@ namespace oisst {
 
     if (iread == 0) {  // Ligang: invent field
       oops::Log::warning() << "State::read: inventing field" << std::endl;
-      field_data = 300.0 //Ligang: WARNING, will change to use e.g. climatology
+    //field_data = 300.0 //Ligang: no operator "=" defined! use for loop; 
     }
     else { // read field from file
       // get filename
       if (!conf.get("filename", filename))
-        util::aborl_cpp("Get filename failed.", __FILE__, __LINE__);
+        util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
       
-      // open netCDF file
-      NcFile file(filename.c_str(), NcFile::ReadOnly);
-      if (!file.is_valid())
-        util::aborl_cpp("Open netCDF file failed.", __FILE__, __LINE__);
+      // Ligang: open netCDF file
+      NcFile file(filename.c_str(), NcFile::read);
+      if (file.isNull())
+        util::abor1_cpp("Create netCDF file failed.", __FILE__, __LINE__);
 
       // Ligang: get file dimensions, for checking
-      time = static_cast<int>(file.get_dim("time")->size());
-      lon  = static_cast<int>(file.get_dim("lon" )->size());
-      lat  = static_cast<int>(file.get_dim("lat" )->size());
+      time = static_cast<int>(file.getDim("time").getSize());
+      lon  = static_cast<int>(file.getDim("lon" ).getSize());
+      lat  = static_cast<int>(file.getDim("lat" ).getSize());
       if (time != 1 ||
           lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) || 
-          lon != static_cast<int>(((atlas::RegularLonLatGrid&)
-                 (atlasFunctionSpace()->grid()))).nx() ) {
-        util::aborl_cpp("lat!=ny or lon!=nx", __FILE__, __LINE__);
+          lon != static_cast<int>((((atlas::RegularLonLatGrid&) //LC: no &?
+                 (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
+        util::abor1_cpp("lat!=ny or lon!=nx", __FILE__, __LINE__);
       }
 
       // get sst data 
-      NcVar *sstVar;
-      if (!(sstVar = file.get_var("sst"))) 
-        util::aborl_cpp("Get sst var failed.", __FILE__, __LINE__);
-      // Ligang: not sure if ok? or first read in to a var then reassign?
-      if (!sstVar->get(&field_data, 1, lat, lon))
-        util::aborl_cpp("Get sst data failed.", __FILE__, __LINE__);
+      NcVar sstVar;
+      sstVar = file.getVar("sst");
+      if (sstVar.isNull())
+        util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
+
+      // Ligang: do we have to use for-loop? 
+    //sstVar.getVar(field_data); // doesn't work this way
+      float sstData[lat][lon];
+      sstVar.getVar(sstData);
+      for (int i = 0; i < lat; i++)
+        for (int j = 0; j < lon; j++)
+          field_data(i, j) = sstData[i][j];
     }
 
   }
@@ -225,40 +251,46 @@ namespace oisst {
 
     // get filename
     if (!conf.get("filename", filename))
-      util::aborl_cpp("Get filename failed.", __FILE__, __LINE__);
+      util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
     
     // create netCDF file
-    NcFile file(filename.c_str(), NcFile::Replace);
-    if (!file.is_valid())
-      util::aborl_cpp("Create netCDF file failed.", __FILE__, __LINE__);
+    NcFile file(filename.c_str(), NcFile::replace);
+    if (file.isNull())
+      util::abor1_cpp("Create netCDF file failed.", __FILE__, __LINE__);
 
     // define dims
-    NcDim *timeDim, *latDim, *lonDim;
-    lat     = geom_->atlasFunctionSpace()->grid().ny()
-    lon     = (atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid()).nx()
-    timeDim = file.add_dim("time");  //unlimited dim if without size parameter;
-    latDim  = file.add_dim("lat" , lat);
-    lonDim  = file.add_dim("lon" , lon);
-    if (!timeDim || !latDim || !lonDim)
-      util::aborl_cpp("Define dims failed.", __FILE__, __LINE__);
+    lat = geom_->atlasFunctionSpace()->grid().ny();
+    lon = (atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid()).nx();
 
-    // define coordinate vars "lat" and "lon"
+    //unlimited dim if without size parameter, what about the size?
+    NcDim timeDim = file.addDim("time");  
+    NcDim latDim  = file.addDim("lat" , lat);
+    NcDim lonDim  = file.addDim("lon" , lon);
+    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
+      util::abor1_cpp("Define dims failed.", __FILE__, __LINE__);
+
+    std::vector<NcDim> dims;
+    dims.push_back(timeDim);
+    dims.push_back(latDim);
+    dims.push_back(lonDim);
+
+    // Lignag: define coordinate vars "lat" and "lon"
     
 
-    // define units atts for coordinate vars
+    // Ligang: define units atts for coordinate vars
 
 
-    // defien data vars
-    
+    // define data vars
+    NcVar sstVar = file.addVar(std::string("sst"), ncFloat, dims);
   
-    // define units atts for data vars
+    // Ligang: define units atts for data vars
 
+    // write data to the file
+    auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
+    sstVar.putVar(&field_data); // Ligang: should NOT work this way?!
 
+    oops::Log::info() << "Successfully write data to file!" << std::endl; 
   }
-
-// ----------------------------------------------------------------------------
-
-  boost::shared_ptr<const Geometry> State::geometry() const {return geom_;}
 
 // ----------------------------------------------------------------------------
 
@@ -266,9 +298,6 @@ namespace oisst {
     os << "insert diagnostic information about state here "
        << "(min/max/mean for each state var?)"
        << std::endl;
-
-  //util::abor1_cpp("State::print() needs to be implemented.",
-  //                __FILE__, __LINE__);
   }
 
 // ----------------------------------------------------------------------------
