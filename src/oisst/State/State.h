@@ -11,6 +11,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -44,53 +45,53 @@ namespace oisst {
   class State : public util::Printable,
                 private util::ObjectCounter<State> {
    public:
-    static const std::string classname() {return "oisst::State";}
+     static const std::string classname() {return "oisst::State";}
 
-    // constructors, destructors
-    State(const Geometry &, const eckit::Configuration &);
-    State(const Geometry &, const oops::Variables &,
-          const util::DateTime &);
-    State(const Geometry &, const State &);
-    State(const State &);
-    ~State();
+     // constructors, destructors
+     State(const Geometry &, const eckit::Configuration &);
+     State(const Geometry &, const oops::Variables &,
+           const util::DateTime &);
+     State(const Geometry &, const State &);
+     State(const State &);
+     ~State();
 
-    // math operators
-    State & operator+=(const Increment &);
-    void accumul(const double &, const State &);
-    double norm() const;
-    void zero();
+     // math operators
+     State & operator+=(const Increment &);
+     void accumul(const double &, const State &);
+     double norm() const;
+     void zero();
 
-    // I/O
-    void read(const eckit::Configuration &);
-    void write(const eckit::Configuration &) const;
+     // I/O
+     void read(const eckit::Configuration &);
+     void write(const eckit::Configuration &) const;
 
-    // time manipulation
-    void updateTime(const util::Duration & dt) { time_ += dt; }
-    const util::DateTime & validTime() const { return time_; }
-    util::DateTime & validTime() { return time_; }
+     // time manipulation
+     void updateTime(const util::Duration & dt) { time_ += dt; }
+     const util::DateTime & validTime() const { return time_; }
+     util::DateTime & validTime() { return time_; }
 
-    // other accessors
-    std::shared_ptr<const Geometry> geometry() const {return geom_;}
-    const oops::Variables & variables() const { return vars_; }
+     // other accessors
+     std::shared_ptr<const Geometry> geometry() const {return geom_;}
+     const oops::Variables & variables() const { return vars_; }
 
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
-      return atlasFieldSet_;
-    }
+     std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
+       return atlasFieldSet_;
+     }
 
-    // Serialize and deserialize
-    size_t serialSize() const { return 0; };
-    void serialize(std::vector<double> &) const  { };
-    void deserialize(const std::vector<double> &, size_t &) { };
+     // Serialize and deserialize
+     size_t serialSize() const { return 0; }
+     void serialize(std::vector<double> &) const  { }
+     void deserialize(const std::vector<double> &, size_t &) { }
 
    private:
-    void print(std::ostream &) const;
+     void print(std::ostream &) const;
 
-  //boost::shared_ptr<const Geometry> geom_;
-    std::shared_ptr<const Geometry> geom_;
-    oops::Variables vars_;
-    util::DateTime time_;
+     // boost::shared_ptr<const Geometry> geom_;
+     std::shared_ptr<const Geometry> geom_;
+     oops::Variables vars_;
+     util::DateTime time_;
 
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
+     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 
