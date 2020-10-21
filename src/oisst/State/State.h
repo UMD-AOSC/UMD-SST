@@ -86,7 +86,6 @@ namespace oisst {
    private:
      void print(std::ostream &) const;
 
-     // boost::shared_ptr<const Geometry> geom_;
      std::shared_ptr<const Geometry> geom_;
      oops::Variables vars_;
      util::DateTime time_;

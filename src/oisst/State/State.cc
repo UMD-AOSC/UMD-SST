@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <iterator>
 
 // #include <netcdf>
 #include "netcdf"
@@ -48,41 +49,27 @@ namespace oisst {
                        __FILE__, __LINE__);
     }
 
-    // output for debug
-    oops::Log::info() << "State::State(): print info for debug." << std::endl;
-    oops::Log::warning() << "State::State(): print wn for debug." << std::endl;
-    // oops::Log::info() << "State::State(): conf: " << conf.getString("grid")
-    //                   << std::endl;
-    oops::Log::info() << "State::State(), time_  " << time_.toString()
-                      << std::endl;
-    // vars_.print(std::cout);
+    const int SIZE = geom_->atlasFunctionSpace()->size();
 
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
                          name(var));
+      // Initialize to 0.0 or 300.0
+      auto fd = make_view<float, 1>(fld);
+      fd.assign(300.0);  // norm is 300., 0.0 if init to 0.0;
 
       atlasFieldSet_->add(fld);
     }
 
-    // Ligang: without this test failed, not automatically initialized to 0.0!
-    // Better way to automatically initialized to 0.0?
-    zero(); 
-
-    // Ligang: for debug
-    size_t size = geom_->atlasFunctionSpace()->size();
-    int ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
-    int nx = static_cast<int>(
-      ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
-    const double norm1 = norm(); 
-    oops::Log::info() << "State::State(): size = " << size
-                      << ", ny = " << ny << ", nx = " << nx << ", norm1 = "
-                      << norm1 << std::endl;
-
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-    std::cout << "State::State(): field_data = " << field_data(0)
-                      << std::endl; 
+    // check and read in data if it has filename
+    if (conf.has("filename")) {
+      read(conf);
+//    double norm1 = norm();
+//    std::cout << "State::State(), after read file, norm1=" << norm1
+//              << std::endl;
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -96,15 +83,19 @@ namespace oisst {
                       __FILE__, __LINE__);
     }
 
+    const int SIZE = geom_->atlasFunctionSpace()->size();
+
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
                          name(var));
+      // Initialize to 300.0, will fail the test: EXPECT(xx3.norm()==0); so 0.0
+      auto fd = make_view<float, 1>(fld);
+      fd.assign(0.0);
+
       atlasFieldSet_->add(fld);
     }
-
-    zero();
   }
 
 // ----------------------------------------------------------------------------
@@ -128,13 +119,13 @@ namespace oisst {
     }
 
     // Ligang: copy data from object other, better way to initialize?!
-    int sz = geom_->atlasFunctionSpace()->size();
+    const int SIZE = geom_->atlasFunctionSpace()->size();
+
     for (int i = 0; i < vars_.size(); i++) {
       auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
       auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < sz; j++) {  
+      for (int j = 0; j < SIZE; j++)
         fd(j) = fd_other(j);
-      } 
     }
   }
 
@@ -149,10 +140,6 @@ namespace oisst {
                        __FILE__, __LINE__);
     }
 
-    // output for debug
-    oops::Log::info() << "State(&other): print info for debug." << std::endl;
-    oops::Log::warning() << "State(&other): print for debug." << std::endl;
-
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
@@ -162,15 +149,14 @@ namespace oisst {
     }
 
     // Ligang: copy data from object other
-    int sz = geom_->atlasFunctionSpace()->size();
+    const int SIZE = geom_->atlasFunctionSpace()->size();
+
     for (int i = 0; i < vars_.size(); i++) {
       auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
       auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < sz; j++) {  
+      for (int j = 0; j < SIZE; j++)
         fd(j) = fd_other(j);
-      } 
     }
-    
   }
 
 // ----------------------------------------------------------------------------
@@ -196,13 +182,14 @@ namespace oisst {
     auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
     auto rhs_field_data = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
 
+    // Ligang: the following does not work, not defined operator;
     // field_data = field_data + zz*rhs_field_data;
-    // Ligang: return size_halo_?
-    size_t size = geom_->atlasFunctionSpace()->size();
-    oops::Log::info() << "size from State::accumul: " << size << std::endl;
-    for (size_t jnode = 0; jnode < size; jnode++) {
-      field_data(jnode) = field_data(jnode) + zz*rhs_field_data(jnode);
-    }
+    // Ligang: return size_halo_? looks not.
+    size_t SIZE = geom_->atlasFunctionSpace()->size();
+
+    // Ligang: what about missing value?
+    for (size_t jnode = 0; jnode < SIZE; jnode++)
+      field_data(jnode) +=  zz*rhs_field_data(jnode);
 
     return;
   }
@@ -215,17 +202,30 @@ namespace oisst {
 
     // Ligang: just consider 1 var for now.
     auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+
     ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
     nx = static_cast<int>(
       ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
+
+    // Ligang: they ARE the same.
     if (geom_->atlasFunctionSpace()->size() != ny*nx)
       util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);
 
     // Ligang: undefined operator "+" for field_data+ny*nx;
     // s = std::inner_product(field_data, field_data+ny*nx, field_data, 0);
-    for (int jnode = 0; jnode < ny*nx; jnode++)
-      s += field_data(jnode)*field_data(jnode);
-    norm = sqrt(s/(1.0*ny*nx));
+    int nValid = 0;
+    for (int jnode = 0; jnode < ny*nx; jnode++) {
+      // Ligang: if not missing value, not a good way, need to improve!
+      if (true) {  // LC: previously (field_data(jnode) > 0.0), fail test
+        nValid += 1;
+        s += field_data(jnode)*field_data(jnode);
+      }
+    }
+
+    if (nValid == 0)
+      norm = 0.0;
+    else
+      norm = sqrt(s/(1.0*nValid));
 
     return norm;
   }
@@ -234,78 +234,80 @@ namespace oisst {
 
   void State::zero() {
     // Ligang: just consider 1 var for now
-    // atlasFieldSet_->field(0).array() = 0.0
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
 
+    // atlasFieldSet_->field(0).array() = 0.0  // does not work.
     // field_data = 0.0; // Ligang: undefined operator "="!
-    for (int i = 0; i < geom_->atlasFunctionSpace()->size(); i++)
-      field_data(i) = 0.0;
+
+    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+    field_data.assign(0.0);
   }
 
 // ----------------------------------------------------------------------------
 
   void State::read(const eckit::Configuration & conf) {
     int iread = 0, time = 0, lon = 0, lat = 0, bc = 0;
-    // int nx, ny;  // ncid, lon_id, lat_id, var_id;
     std::string sdate, filename, record;
 
-    auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
+    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+    const int SIZE = geom_->atlasFunctionSpace()->size();
 
-    if (conf.has("read_from_file"))
+    // Ligang: conf only has "statefile" part of the yml file.
+    // Here we do not actually use iread
+    if (conf.has("read_from_file")) {
       iread = conf.getInt("read_from_file");
-
-    if (iread == 0) {  // Ligang: invent field
-      oops::Log::warning() << "State::read: inventing field" << std::endl;
-      // field_data = 300.0 // Ligang: no operator "=" defined! use for loop;
-    } else {  // read field from file
-      // get filename
-      if (!conf.get("filename", filename))
-        util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
-
-      // Ligang: open netCDF file
-      netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
-      if (file.isNull())
-        util::abor1_cpp("Create netCDF file failed.", __FILE__, __LINE__);
-
-      // Ligang: get file dimensions, for checking
-      time = static_cast<int>(file.getDim("time").getSize());
-      lon  = static_cast<int>(file.getDim("lon").getSize());
-      lat  = static_cast<int>(file.getDim("lat").getSize());
-      if (time != 1 ||
-          lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) ||
-          lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
-                 (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
-        util::abor1_cpp("lat!=ny or lon!=nx", __FILE__, __LINE__);
-      }
-
-      // get sst data
-      netCDF::NcVar sstVar;
-      sstVar = file.getVar("sst");
-      if (sstVar.isNull())
-        util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
-
-      // Ligang: do we have to use for-loop?
-      // sstVar.getVar(field_data); // doesn't work this way
-      float sstData[lat][lon];
-      sstVar.getVar(sstData);
-      for (int i = 0; i < lat; i++)
-        for (int j = 0; j < lon; j++)
-          field_data(i, j) = sstData[i][j];
+    } else {
+      // you can output keys to check
+      std::vector<std::string> keys = conf.keys();
     }
+
+    // get filename
+    if (!conf.get("filename", filename))
+      util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
+
+    // Ligang: open netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
+    if (file.isNull())
+      util::abor1_cpp("Create netCDF file failed.", __FILE__, __LINE__);
+
+    // Ligang: get file dimensions, for checking
+    time = static_cast<int>(file.getDim("time").getSize());
+    lon  = static_cast<int>(file.getDim("lon").getSize());
+    lat  = static_cast<int>(file.getDim("lat").getSize());
+    if (time != 1 ||
+        lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) ||
+        lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
+               (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
+      util::abor1_cpp("lat!=ny or lon!=nx", __FILE__, __LINE__);
+    }
+
+    // get sst data
+    netCDF::NcVar sstVar;
+    sstVar = file.getVar("sst");
+    if (sstVar.isNull())
+      util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
+
+    // Ligang: do we have to use for-loop?
+    // sstVar.getVar(field_data); // doesn't work this way
+    float sstData[lat][lon];
+    sstVar.getVar(sstData);
+
+    int idx = 0;
+    for (int i = 0; i < lat; i++)
+      for (int j = 0; j < lon; j++)
+        field_data(idx++) = sstData[i][j];
   }
 
 // ----------------------------------------------------------------------------
 
   void State::write(const eckit::Configuration & conf) const {
-    // util::abor1_cpp("State::write() needs to be implemented.",
-    //                  __FILE__, __LINE__);
-
     int lat, lon, time = 1;
     std::string filename;
 
     // get filename
     if (!conf.get("filename", filename))
       util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
+    else
+      std::cout << "State::write(), filename=" << filename << std::endl;
 
     // create netCDF file
     netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
@@ -314,10 +316,11 @@ namespace oisst {
 
     // define dims
     lat = geom_->atlasFunctionSpace()->grid().ny();
-    lon = (atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid()).nx();
+    lon =((atlas::RegularLonLatGrid)(geom_->atlasFunctionSpace()->grid())).nx();
 
-    // unlimited dim if without size parameter, what about the size?
-    netCDF::NcDim timeDim = file.addDim("time");
+    // unlimited dim if without size parameter, then it'll be 0,
+    // what about the size?
+    netCDF::NcDim timeDim = file.addDim("time", 1);
     netCDF::NcDim latDim  = file.addDim("lat" , lat);
     netCDF::NcDim lonDim  = file.addDim("lon" , lon);
     if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
@@ -337,10 +340,21 @@ namespace oisst {
                                        , dims);
 
     // Ligang: define units atts for data vars
+    sstVar.putAtt("units", "K");
+    sstVar.putAtt("_FillValue", netCDF::NcFloat(), -32768.);
 
     // write data to the file
-    auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
-    sstVar.putVar(&field_data);  // Ligang: should NOT work this way?!
+    // Ligang: compile failed, rank should be 1, not 2, related to init?
+//  auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
+    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+
+    float sstData[time][lat][lon];
+    int idx = 0;
+    for (int i = 0; i < lat; i++)
+      for (int j = 0; j < lon; j++)
+        sstData[0][i][j] = field_data(idx++);
+
+    sstVar.putVar(sstData);
 
     oops::Log::info() << "Successfully write data to file!" << std::endl;
   }
