@@ -361,6 +361,10 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
+  std::shared_ptr<const Geometry> State::geometry() const {return geom_;}
+
+// ----------------------------------------------------------------------------
+
   void State::print(std::ostream & os) const {
     os << "insert diagnostic information about state here "
        << "(min/max/mean for each state var?)"

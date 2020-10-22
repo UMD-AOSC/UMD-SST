@@ -16,8 +16,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "oops/base/GeneralizedDepartures.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -47,58 +45,57 @@ namespace oisst {
                     public util::Serializable,
                     private util::ObjectCounter<Increment> {
    public:
-     static const std::string classname() {return "oisst::Increment";}
+    static const std::string classname() {return "oisst::Increment";}
 
-     // Constructor, destructor
-     Increment(const Geometry &, const oops::Variables &,
-               const util::DateTime &);
-     Increment(const Geometry &, const Increment &);
-     Increment(const Increment &, const bool);
-     Increment(const Increment &);
-     ~Increment();
+    // Constructor, destructor
+    Increment(const Geometry &, const oops::Variables &,
+              const util::DateTime &);
+    Increment(const Geometry &, const Increment &);
+    Increment(const Increment &, const bool);
+    Increment(const Increment &);
+    ~Increment();
 
-     // Math operators
-     Increment & operator =(const Increment &);
-     Increment & operator-=(const Increment &);
-     Increment & operator+=(const Increment &);
-     Increment & operator*=(const double &);
-     void accumul(const double &, const State &);
-     void axpy(const double &, const Increment &, const bool check = true);
-     void diff(const State &, const State &);
-     double dot_product_with(const Increment &) const;
-     double norm() const;
-     void random();
-     void schur_product_with(const Increment &);
-     void zero();
-     void zero(const util::DateTime &);
+    // Math operators
+    Increment & operator =(const Increment &);
+    Increment & operator-=(const Increment &);
+    Increment & operator+=(const Increment &);
+    Increment & operator*=(const double &);
+    void accumul(const double &, const State &);
+    void axpy(const double &, const Increment &, const bool check = true);
+    void diff(const State &, const State &);
+    double dot_product_with(const Increment &) const;
+    double norm() const;
+    void random();
+    void schur_product_with(const Increment &);
+    void zero();
+    void zero(const util::DateTime &);
 
-     // time manipulation
-     void updateTime(const util::Duration & dt) { time_ += dt; }
-     const util::DateTime & validTime() const { return time_; }
-     util::DateTime & validTime() { return time_; }
+    // time manipulation
+    void updateTime(const util::Duration & dt) { time_ += dt; }
+    const util::DateTime & validTime() const { return time_; }
+    util::DateTime & validTime() { return time_; }
 
-     // dirac
-     void dirac(const eckit::Configuration &);
+    // dirac
+    void dirac(const eckit::Configuration &);
 
-     // other accessors
-     std::shared_ptr<const Geometry> geometry() const { return geom_; }
+    // other accessors
+    std::shared_ptr<const Geometry> geometry() const { return geom_; }
 
-     // I/O
-     void read(const eckit::Configuration &);
-     void write(const eckit::Configuration &) const;
+    // I/O
+    void read(const eckit::Configuration &);
+    void write(const eckit::Configuration &) const;
 
-     // Serialize and deserialize (not needed by our project)
-     size_t serialSize() const override { return 0; }
-     void serialize(std::vector<double> &) const override {}
-     void deserialize(const std::vector<double> &, size_t &) override {}
+    // Serialize and deserialize (not needed by our project)
+    size_t serialSize() const override { return 0; }
+    void serialize(std::vector<double> &) const override {}
+    void deserialize(const std::vector<double> &, size_t &) override {}
 
    private:
-     void print(std::ostream &) const override;
+    void print(std::ostream &) const override;
 
-     // boost::shared_ptr<const Geometry> geom_;
-     std::shared_ptr<const Geometry> geom_;
-     util::DateTime time_;
-     oops::Variables vars_;
+    std::shared_ptr<const Geometry> geom_;
+    util::DateTime time_;
+    oops::Variables vars_;
   };
 }  // namespace oisst
 
