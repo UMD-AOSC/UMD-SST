@@ -45,7 +45,7 @@ namespace oisst {
       vars_(conf, "state variables") {
 
     if (vars_.size() != 1) {
-      util::abor1_cpp("State::State() needs to be implemented.",
+      util::abor1_cpp("State::State(), vars_.size() != 1",
                        __FILE__, __LINE__);
     }
 
@@ -79,7 +79,7 @@ namespace oisst {
     : geom_(new Geometry(geom)), time_(time), vars_(vars) {
 
     if (vars_.size() != 1) {
-      util::abor1_cpp("State::State() needs to be implemented.",
+      util::abor1_cpp("State::State(), vars_.size() != 1",
                       __FILE__, __LINE__);
     }
 

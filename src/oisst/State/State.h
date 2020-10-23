@@ -73,6 +73,10 @@ namespace oisst {
     std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
+      return atlasFieldSet_;
+    }
+
     // Serialize and deserialize (not needed by our project)
     size_t serialSize() const override { return 0; }
     void serialize(std::vector<double> &) const override {}
