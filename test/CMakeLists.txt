@@ -21,12 +21,12 @@ endforeach()
 
 
 list( APPEND oisst_test_data
-  data/19850101_regridded_sst.nc
+  Data/19850101_regridded_sst.nc
   )
 
 
 # link the input files for the tests
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
 foreach(FILENAME ${oisst_test_data})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
