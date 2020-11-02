@@ -16,5 +16,6 @@ inc variables: [x]
 
 increment test:
   date: 1985-01-01T12:00:00Z
+  tolerance: 1e-7
 # filename: Data/19850101_regridded_sst.nc
 # added variables: [x]
