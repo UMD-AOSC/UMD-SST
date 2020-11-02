@@ -4,18 +4,8 @@ geometry:
     type: global
     west: -180
 
-read_from_file: 1
-
-# do not know what it is yet, most likely will set up wrongly
-dirac:
-  date: 1985-01-01T12:00:00Z
-  ixdir: [20]
-  iydir: [10]
-
-inc variables: [x]
+inc variables: [sea_surface_temperature]
 
 increment test:
   date: 1985-01-01T12:00:00Z
-  tolerance: 1e-7
-# filename: Data/19850101_regridded_sst.nc
-# added variables: [x]
+  tolerance: 1e-6

@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <limits>
 
 #include "netcdf"
 
@@ -157,10 +158,7 @@ namespace oisst {
   }
 // ----------------------------------------------------------------------------
 
-  Increment::~Increment() {
-//  util::abor1_cpp("Increment::~Increment() needs to be implemented.",
-//                   __FILE__, __LINE__);
-  }
+  Increment::~Increment() { }
 
 // ----------------------------------------------------------------------------
 
@@ -242,8 +240,7 @@ namespace oisst {
 
   void Increment::axpy(const double &zz, const Increment &dx, const bool check)
   {
-    // Ligang: not sure what to do with "check"???
-//  ASSERT(!check || time_ == dx.validTime())
+    ASSERT(!check || time_ == dx.validTime());
 
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
     auto fd_dx = make_view<float, 1>(dx.atlasFieldSet()->field(0));
@@ -318,13 +315,11 @@ namespace oisst {
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
-//  util::NormalDistribution<float> x(SIZE, 0, 1.0, 1);
-    util::UniformDistribution<float> x(size, -1.0, 1.0);
+    util::NormalDistribution<float> x(size, 0, 1.0, 1);
+//  util::UniformDistribution<float> x(size, -1.0, 1.0);
 
     for (int i = 0; i < size; i++)
       fd(i) = x[i];
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -334,7 +329,6 @@ namespace oisst {
     auto fd_rhs = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
-    // Ligang: will be updated with missing_value process!
     for (int i = 0; i < size; i++)
       fd(i) *= fd_rhs(i);
 
@@ -346,8 +340,6 @@ namespace oisst {
   void Increment::zero() {
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
     fd.assign(0.0);
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -355,8 +347,6 @@ namespace oisst {
   void Increment::ones() {
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
     fd.assign(1.0);
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -375,7 +365,6 @@ namespace oisst {
 
     // check
     ASSERT(ixdir.size() > 0 && ixdir.size() == iydir.size());
-//  ASSERT(iydir.size() > 0);
     const int dir_size = ixdir.size();
 
     // Ligang: This is where we need the field_data to be 2D;
@@ -392,15 +381,31 @@ namespace oisst {
       int idx = ixdir[i] + iydir[i]*nx;
       fd(idx) = 1.0;
     }
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::print(std::ostream & os) const {
-    os << "Increment: "
-       << "(TODO, print diagnostic info about the increment here)"
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    const int size = geom_->atlasFunctionSpace()->size();
+
+    float mean = 0.0, sum = 0.0,
+          min = std::numeric_limits<float>::max(),
+          max = std::numeric_limits<float>::min();
+
+    // Does fd here (Atlas) provide max, min, mean functions as c++ std does,
+    // Since normally Increment does not have missing_values?
+    for (int i = 0; i < size; i++) {
+      if (fd(i) < min) min = fd(i);
+      if (fd(i) > max) max = fd(i);
+      sum += fd(i);
+    }
+    mean = sum / (1.0*size);
+
+    os << "Increment: print diagnostic info about the increment here"
+       << "(min/max/mean for var sea_surface_temperature: )"
+       << std::endl;
+    os << "min = " << min << ", max = " << max << ", mean = " << mean
        << std::endl;
   }
 

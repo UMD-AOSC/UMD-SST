@@ -88,9 +88,8 @@ namespace oisst {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
                          name(var));
-      // Initialize to 300.0, will fail the test: EXPECT(xx3.norm()==0); so 0.0
       auto fd = make_view<float, 1>(fld);
-      fd.assign(0.0);  // Ligang: be careful with the missingvalues!
+      fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
     }
@@ -152,16 +151,13 @@ namespace oisst {
       auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
       auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);  // Ligang: missing values.
+        fd(j) = fd_other(j);
     }
   }
 
 // ----------------------------------------------------------------------------
 
-  State::~State() {
-  // util::abor1_cpp("State::~State() needs to be implemented.",
-  //                __FILE__, __LINE__);
-  }
+  State::~State() {}
 
 // ----------------------------------------------------------------------------
 
@@ -189,9 +185,6 @@ namespace oisst {
 
     float missing = util::missingValue(missing);
 
-    // Ligang: the following does not work, not defined operator;
-    // field_data = field_data + zz*rhs_field_data;
-    // Ligang: return size_halo_? looks not.
     const size_t size = geom_->atlasFunctionSpace()->size();
 
     for (size_t i = 0; i < size; i++) {
@@ -200,13 +193,6 @@ namespace oisst {
       else
         fd(i) +=  zz*fd_rhs(i);
     }
-
-//  double nm = norm();
-//  int precision = std::numeric_limits<double>::max_digits10;
-//  std::cout << "State::accumul(), norm = " << std::setprecision(precision)
-//            << nm << std::endl;
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -217,15 +203,12 @@ namespace oisst {
                    (geom_->atlasFunctionSpace()->grid())).nx());
     const int size = geom_->atlasFunctionSpace()->size();
 
-    // Ligang: they should be the same.
+    // Ligang: just to check, they should be the same.
     if (size != ny*nx)
       util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);
 
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
     float missing = util::missingValue(missing);
-
-    // Ligang: undefined operator "+" for field_data+ny*nx;
-    // s = std::inner_product(field_data, field_data+ny*nx, field_data, 0);
 
     int nValid = 0;
     double norm = 0.0, s = 0.0;
@@ -241,31 +224,20 @@ namespace oisst {
     else
       norm = sqrt(s/(1.0*nValid));
 
-//  // Ligang: for debug
-//  int precision = std::numeric_limits<double>::max_digits10;
-//  std::cout << "State::norm(), norm = " << std::setprecision(precision)
-//            << norm << std::endl;
-
-//  oops::Log::info() << "State::norm(), norm = " << norm << std::endl;
-
     return norm;
   }
 
 // ----------------------------------------------------------------------------
 
   void State::zero() {
-    // atlasFieldSet_->field(0).array() = 0.0  // does not work.
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
     float missing = util::missingValue(missing);
 
-//  fd.assign(0.0); // function ok, but need to consider missing values!
     for (int i = 0; i < size; i++)
       if (fd(i) != missing)
         fd(i) = 0.0;
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -320,7 +292,6 @@ namespace oisst {
     const float epsilon = 1.0e-12;
     const float missing = util::missingValue(missing);
     const float missing_nc = -32768.0;
-//  oops::Log::info() << "State::read(), missing = " << missing << std::endl;
     for (int j = 0; j < lat; j++)
       for (int i = 0; i < lon; i++)
         if (abs(sstData[j][i]-(missing_nc)) < epsilon)
@@ -381,8 +352,6 @@ namespace oisst {
     sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
     // write data to the file
-    // Ligang: compile failed, rank should be 1, not 2, related to init?
-//  auto fd = make_view<float, 2>(atlasFieldSet_->field(0));
     auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
 
     const float missing = util::missingValue(missing);

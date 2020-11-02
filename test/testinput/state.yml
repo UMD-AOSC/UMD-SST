@@ -23,14 +23,3 @@ state test:
     date: 1985-01-01T12:00:00Z
     filename: Data/out.19850101_regridded_sst.nc
     state variables: *state_vars
-
-# do not know what it is yet, most likely will set up wrongly
-dirac:
-  date: 1985-01-01T12:00:00Z
-  ixdir: [20]
-  iydir: [10]
-
-increment:
-  date: 1985-01-01T12:00:00Z
-  filename: Data/19850101_regridded_sst.nc
-  added variables: [x]
