@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
+#include "oisst/Fields/Fields.h"
+
 #include "oops/base/GeneralizedDepartures.h"
-#include "oops/base/Variables.h"
-#include "oops/util/DateTime.h"
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
 
@@ -43,7 +43,8 @@ namespace oisst {
   class Increment : public oops::GeneralizedDepartures,
                     public util::Printable,
                     public util::Serializable,
-                    private util::ObjectCounter<Increment> {
+                    private util::ObjectCounter<Increment>,
+                    public oisst::Fields {
    public:
     static const std::string classname() {return "oisst::Increment";}
 
@@ -60,7 +61,7 @@ namespace oisst {
     Increment & operator-=(const Increment &);
     Increment & operator+=(const Increment &);
     Increment & operator*=(const double &);
-    void accumul(const double &, const State &);
+    // void accumul(const double &, const State &);
     void axpy(const double &, const Increment &, const bool check = true);
     void diff(const State &, const State &);
     double dot_product_with(const Increment &) const;
@@ -98,12 +99,6 @@ namespace oisst {
 
    private:
     void print(std::ostream &) const override;
-
-    std::shared_ptr<const Geometry> geom_;
-    util::DateTime time_;
-    oops::Variables vars_;
-
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 

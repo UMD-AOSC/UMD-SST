@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "oisst/Fields/Fields.h"
+
 #include "eckit/mpi/Comm.h"
 
 #include "atlas/field.h"
@@ -42,7 +44,8 @@ namespace oisst {
   // State class
   class State : public util::Printable,
                 public util::Serializable,
-                private util::ObjectCounter<State> {
+                private util::ObjectCounter<State>,
+                public oisst::Fields {
    public:
     static const std::string classname() {return "oisst::State";}
 
@@ -56,7 +59,7 @@ namespace oisst {
 
     // math operators
     State & operator+=(const Increment &);
-    void accumul(const double &, const State &);
+    // void accumul(const double &, const State &);
     double norm() const;
     void zero();
 
@@ -84,12 +87,6 @@ namespace oisst {
 
    private:
      void print(std::ostream &) const;
-
-     std::shared_ptr<const Geometry> geom_;
-     oops::Variables vars_;
-     util::DateTime time_;
-
-     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 

@@ -40,7 +40,7 @@ namespace oisst {
   Increment::Increment(const Geometry & geom,
                        const oops::Variables & vars,
                        const util::DateTime & vt)
-    : geom_(new Geometry(geom)), time_(vt), vars_(vars) {
+    : Fields(geom, vars, vt) {
 
     if (vars_.size() != 1) {
       util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
@@ -63,7 +63,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Geometry & geom, const Increment & other)
-    : geom_(new Geometry(geom)), time_(other.time_), vars_(other.vars_) {
+    : Fields(geom, other.vars_, other.time_) {
     // it will normally be used for interpolation and change resolution.
 
     if (vars_.size() != 1) {
@@ -93,8 +93,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other, const bool copy)
-    : geom_(new Geometry(*other.geom_)), time_(other.time_),
-      vars_(other.vars_) {
+    : Fields(*other.geom_, other.vars_, other.time_) {
 
     if (vars_.size() != 1) {
       util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
@@ -127,8 +126,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other)
-    : geom_(new Geometry(*other.geom_)), time_(other.time_),
-      vars_(other.vars_) {
+    : Fields(*other.geom_, other.vars_, other.time_) {
 
     if (vars_.size() != 1) {
       util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
@@ -196,15 +194,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator +=(const Increment &other) {
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) += fd_other(j);
-    }
-
+    Fields::operator+=(other);
     return *this;
   }
 
@@ -220,20 +210,6 @@ namespace oisst {
     }
 
     return *this;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::accumul(const double & zz, const State & xx) {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_xx = make_view<double, 1>(xx.atlasFieldSet()->field(0));
-
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < size; i++)
-      fd(i) += zz*fd_xx(i);
-
-    return;
   }
 
 // ----------------------------------------------------------------------------

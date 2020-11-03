@@ -46,9 +46,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   State::State(const Geometry & geom, const eckit::Configuration & conf)
-    : geom_(new Geometry(geom)), time_(conf.getString("date")),
-      vars_(conf, "state variables") {
-
+    : Fields(geom, oops::Variables(conf, "state variables"),
+             util::DateTime(conf.getString("date"))) {
     if (vars_.size() != 1) {
       util::abor1_cpp("State::State(), vars_.size() != 1",
                        __FILE__, __LINE__);
@@ -75,7 +74,7 @@ namespace oisst {
 
   State::State(const Geometry & geom, const oops::Variables & vars,
                const util::DateTime & time)
-    : geom_(new Geometry(geom)), time_(time), vars_(vars) {
+    : Fields(geom, vars, time) {
 
     if (vars_.size() != 1) {
       util::abor1_cpp("State::State(), vars_.size() != 1",
@@ -97,7 +96,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   State::State(const Geometry & geom, const State & other)
-    : geom_(new Geometry(geom)), time_(other.time_), vars_(other.vars_) {
+    : Fields(geom, other.vars_, other.time_) {
     // Change state resolution, normally used for interpolation.
 
     if (vars_.size() != 1) {
@@ -127,8 +126,7 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   State::State(const State & other)
-    : geom_(new Geometry(*other.geom_)), time_(other.time_),
-      vars_(other.vars_) {
+    : Fields(*other.geom_, other.vars_, other.time_) {
 
     if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
@@ -161,37 +159,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   State & State::operator+=(const Increment & dx) {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_dx = make_view<double, 1>(dx.atlasFieldSet()->field(0));
-
-    double missing = util::missingValue(missing);
-    const int size = geom_->atlasFunctionSpace()->size();
-    for (int i = 0; i < size; i++) {
-      if (fd(i) == missing || fd_dx(i) == missing)
-        fd(i) = missing;
-      else
-        fd(i) += fd_dx(i);
-    }
-
+    Fields::operator+=(dx);
     return *this;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void State::accumul(const double &zz, const State &rhs) {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
-
-    double missing = util::missingValue(missing);
-
-    const size_t size = geom_->atlasFunctionSpace()->size();
-
-    for (size_t i = 0; i < size; i++) {
-      if (fd(i) == missing || fd_rhs(i) == missing)
-        fd(i) = missing;
-      else
-        fd(i) +=  zz*fd_rhs(i);
-    }
   }
 
 // ----------------------------------------------------------------------------
