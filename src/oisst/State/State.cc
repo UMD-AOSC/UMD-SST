@@ -48,23 +48,6 @@ namespace oisst {
   State::State(const Geometry & geom, const eckit::Configuration & conf)
     : Fields(geom, oops::Variables(conf, "state variables"),
              util::DateTime(conf.getString("date"))) {
-    if (vars_.size() != 1) {
-      util::abor1_cpp("State::State(), vars_.size() != 1",
-                       __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      // Initialize to 0.0 or 300.0
-      auto fd = make_view<double, 1>(fld);
-      fd.assign(300.0);  // norm is 300., 0.0 if init to 0.0;
-
-      atlasFieldSet_->add(fld);
-    }
-
     // check and read in data if it has filename
     if (conf.has("filename"))
       read(conf);
@@ -74,83 +57,19 @@ namespace oisst {
 
   State::State(const Geometry & geom, const oops::Variables & vars,
                const util::DateTime & time)
-    : Fields(geom, vars, time) {
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("State::State(), vars_.size() != 1",
-                      __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      auto fd = make_view<double, 1>(fld);
-      fd.assign(0.0);
-
-      atlasFieldSet_->add(fld);
-    }
-  }
+    : Fields(geom, vars, time) {}
 
 // ----------------------------------------------------------------------------
 
   State::State(const Geometry & geom, const State & other)
-    : Fields(geom, other.vars_, other.time_) {
+    : State(other) {
     // Change state resolution, normally used for interpolation.
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("State::State() needs to be implemented.",
-                      __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      atlasFieldSet_->add(fld);
-    }
-
-    // Ligang: copy data from object other? better way to initialize?!
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);  // Ligang: be careful with the missingvalue.
-    }
   }
 
 // ----------------------------------------------------------------------------
 
   State::State(const State & other)
-    : Fields(*other.geom_, other.vars_, other.time_) {
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("State::State() needs to be implemented.",
-                       __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      atlasFieldSet_->add(fld);
-    }
-
-    // Ligang: copy data from object other
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);
-    }
-  }
+    : Fields(other) {}
 
 // ----------------------------------------------------------------------------
 
@@ -161,51 +80,6 @@ namespace oisst {
   State & State::operator+=(const Increment & dx) {
     Fields::operator+=(dx);
     return *this;
-  }
-
-// ----------------------------------------------------------------------------
-
-  double State::norm() const {
-    const int nx = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()),
-              ny = static_cast<int>(((atlas::RegularLonLatGrid&)
-                   (geom_->atlasFunctionSpace()->grid())).nx());
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    // Ligang: just to check, they should be the same.
-    if (size != ny*nx)
-      util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);
-
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    double missing = util::missingValue(missing);
-
-    int nValid = 0;
-    double norm = 0.0, s = 0.0;
-    for (int i = 0; i < size; i++) {
-      if (fd(i) != missing) {
-        nValid += 1;
-        s += fd(i)*fd(i);
-      }
-    }
-
-    if (nValid == 0)
-      norm = 0.0;
-    else
-      norm = sqrt(s/(1.0*nValid));
-
-    return norm;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void State::zero() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-
-    const int size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
-
-    for (int i = 0; i < size; i++)
-      if (fd(i) != missing)
-        fd(i) = 0.0;
   }
 
 // ----------------------------------------------------------------------------
@@ -352,10 +226,6 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  std::shared_ptr<const Geometry> State::geometry() const {return geom_;}
-
-// ----------------------------------------------------------------------------
-
   void State::print(std::ostream & os) const {
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
@@ -382,9 +252,6 @@ namespace oisst {
       mean = sum / (1.0*nValid);
     }
 
-    os << "insert diagnostic information about state here "
-       << "(min/max/mean for var sea_surface_temperature: )"
-       << std::endl;
     os << "min = " << min << ", max = " << max << ", mean = " << mean
        << std::endl;
   }

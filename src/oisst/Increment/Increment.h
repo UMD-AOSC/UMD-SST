@@ -14,13 +14,11 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "oisst/Fields/Fields.h"
 
 #include "oops/base/GeneralizedDepartures.h"
 #include "oops/util/Printable.h"
-#include "oops/util/Serializable.h"
 
 // forward declarations
 namespace oops {
@@ -42,7 +40,6 @@ namespace oisst {
   // Increment class
   class Increment : public oops::GeneralizedDepartures,
                     public util::Printable,
-                    public util::Serializable,
                     private util::ObjectCounter<Increment>,
                     public oisst::Fields {
    public:
@@ -61,41 +58,21 @@ namespace oisst {
     Increment & operator-=(const Increment &);
     Increment & operator+=(const Increment &);
     Increment & operator*=(const double &);
-    // void accumul(const double &, const State &);
     void axpy(const double &, const Increment &, const bool check = true);
     void diff(const State &, const State &);
     double dot_product_with(const Increment &) const;
-    double norm() const;
     void random();
     void schur_product_with(const Increment &);
     void zero();
     void zero(const util::DateTime &);
     void ones();
 
-    // time manipulation
-    void updateTime(const util::Duration & dt) { time_ += dt; }
-    const util::DateTime & validTime() const { return time_; }
-    util::DateTime & validTime() { return time_; }
-
     // dirac
     void dirac(const eckit::Configuration &);
-
-    // other accessors
-    std::shared_ptr<const Geometry> geometry() const { return geom_; }
-    const oops::Variables & variables() const { return vars_; }
-
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
-      return atlasFieldSet_;
-    }
 
     // I/O
     void read(const eckit::Configuration &);
     void write(const eckit::Configuration &) const;
-
-    // Serialize and deserialize (not needed by our project)
-    size_t serialSize() const override { return 0; }
-    void serialize(std::vector<double> &) const override {}
-    void deserialize(const std::vector<double> &, size_t &) override {}
 
    private:
     void print(std::ostream &) const override;

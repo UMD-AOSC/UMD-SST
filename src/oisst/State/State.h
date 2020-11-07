@@ -11,13 +11,8 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "oisst/Fields/Fields.h"
-
-#include "eckit/mpi/Comm.h"
-
-#include "atlas/field.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -43,7 +38,6 @@ namespace oisst {
 
   // State class
   class State : public util::Printable,
-                public util::Serializable,
                 private util::ObjectCounter<State>,
                 public oisst::Fields {
    public:
@@ -57,33 +51,13 @@ namespace oisst {
     State(const State &);
     ~State();
 
-    // math operators
+    // wrappers of methods that are fully implemented in Fields
     State & operator+=(const Increment &);
-    // void accumul(const double &, const State &);
-    double norm() const;
-    void zero();
+
 
     // I/O
     void read(const eckit::Configuration &);
     void write(const eckit::Configuration &) const;
-
-    // time manipulation
-    void updateTime(const util::Duration & dt) { time_ += dt; }
-    const util::DateTime & validTime() const { return time_; }
-    util::DateTime & validTime() { return time_; }
-
-    // other accessors
-    std::shared_ptr<const Geometry> geometry() const;
-    const oops::Variables & variables() const { return vars_; }
-
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
-      return atlasFieldSet_;
-    }
-
-    // Serialize and deserialize (not needed by our project)
-    size_t serialSize() const override { return 0; }
-    void serialize(std::vector<double> &) const override {}
-    void deserialize(const std::vector<double> &, size_t &) override {}
 
    private:
      void print(std::ostream &) const;

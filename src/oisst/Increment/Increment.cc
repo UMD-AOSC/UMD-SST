@@ -40,120 +40,28 @@ namespace oisst {
   Increment::Increment(const Geometry & geom,
                        const oops::Variables & vars,
                        const util::DateTime & vt)
-    : Fields(geom, vars, vt) {
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
-                      __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-
-      auto fd = make_view<double, 1>(fld);
-      fd.assign(0.0);
-
-      atlasFieldSet_->add(fld);
-    }
-  }
+    : Fields(geom, vars, vt) {}
 
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Geometry & geom, const Increment & other)
-    : Fields(geom, other.vars_, other.time_) {
+    : Fields(other) {
     // it will normally be used for interpolation and change resolution.
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
-                       __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      atlasFieldSet_->add(fld);
-    }
-
-    // Ligang: for now copy data from object other, should be interpolation.
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);
-    }
   }
 
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other, const bool copy)
     : Fields(*other.geom_, other.vars_, other.time_) {
-
-    if (vars_.size() != 1) {
-      util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
-                        __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      auto fd = make_view<double, 1>(fld);
-      fd.assign(0.0);
-
-      atlasFieldSet_->add(fld);
-    }
-
-    if (copy) {
-      const int size = geom_->atlasFunctionSpace()->size();
-
-      for (int i = 0; i < vars_.size(); i++) {
-        auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-        auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-        for (int j = 0; j < size; j++)
-          fd(j) = fd_other(j);
-      }
-    }
+    if (copy)
+      *this = other;
   }
 
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other)
-    : Fields(*other.geom_, other.vars_, other.time_) {
+    : Fields(other) {}
 
-    if (vars_.size() != 1) {
-      util::abor1_cpp("Increment::Increment(), vars_.size() != 1.",
-                        __FILE__, __LINE__);
-    }
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      auto fd = make_view<double, 1>(fld);
-      fd.assign(0.0);
-
-      atlasFieldSet_->add(fld);
-    }
-
-    // Ligang: copy data from other.
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);
-    }
-  }
 // ----------------------------------------------------------------------------
 
   Increment::~Increment() { }
@@ -164,15 +72,7 @@ namespace oisst {
     // Ligang: Do we assume the geom_ and vars_ are the same, (so they are not
     // empty)? For now yes, as all of the constructors allocate atlasFieldSet.
     // so just assign the values of FieldSet. same for other math operators.
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);
-    }
-
+    Fields::operator=(other);
     return *this;
   }
 
@@ -217,16 +117,7 @@ namespace oisst {
   void Increment::axpy(const double &zz, const Increment &dx, const bool check)
   {
     ASSERT(!check || time_ == dx.validTime());
-
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_dx = make_view<double, 1>(dx.atlasFieldSet()->field(0));
-
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < size; i++)
-      fd(i) += zz*fd_dx(i);
-
-    return;
+    accumul(zz, dx);
   }
 
 // ----------------------------------------------------------------------------
@@ -240,8 +131,6 @@ namespace oisst {
 
     for (int i = 0; i < size; i++)
       fd(i) = fd_x1(i) - fd_x2(i);
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
@@ -262,37 +151,11 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  double Increment::norm() const {
-    double norm = 0.0, s = 0.0;
-
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    int nValid = 0;
-    for (int i = 0; i < size; i++) {
-      // Ligang: will be updated with missing_value process!
-      if (true) {
-        nValid += 1;
-        s += fd(i)*fd(i);
-      }
-    }
-
-    if (nValid == 0)
-      norm = 0.0;
-    else
-      norm = sqrt(s/(1.0*nValid));
-
-    return norm;
-  }
-
-// ----------------------------------------------------------------------------
-
   void Increment::random() {
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     util::NormalDistribution<double> x(size, 0, 1.0, 1);
-//  util::UniformDistribution<double> x(size, -1.0, 1.0);
 
     for (int i = 0; i < size; i++)
       fd(i) = x[i];
@@ -307,15 +170,12 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
     for (int i = 0; i < size; i++)
       fd(i) *= fd_rhs(i);
-
-    return;
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::zero() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    fd.assign(0.0);
+    Fields::zero();
   }
 
 // ----------------------------------------------------------------------------
@@ -378,9 +238,6 @@ namespace oisst {
     }
     mean = sum / (1.0*size);
 
-    os << "Increment: print diagnostic info about the increment here"
-       << "(min/max/mean for var sea_surface_temperature: )"
-       << std::endl;
     os << "min = " << min << ", max = " << max << ", mean = " << mean
        << std::endl;
   }
