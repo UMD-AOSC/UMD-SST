@@ -6,9 +6,6 @@
  */
 
 #include <vector>
-#include <limits>
-
-#include "netcdf"
 
 #include "oisst/Geometry/Geometry.h"
 #include "oisst/Increment/Increment.h"
@@ -28,7 +25,6 @@
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
 
-// using namespace netCDF;
 using atlas::array::make_view;
 using atlas::option::name;
 
@@ -118,6 +114,8 @@ namespace oisst {
   void Increment::axpy(const double &zz, const Increment &dx, const bool check)
   {
     ASSERT(!check || time_ == dx.validTime());
+    // use accumul, because conceptually it is the same as axpy
+    // (axpy is for Increment, accumul is for State)
     accumul(zz, dx);
   }
 
@@ -218,29 +216,6 @@ namespace oisst {
       int idx = ixdir[i] + iydir[i]*nx;
       fd(idx) = 1.0;
     }
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::print(std::ostream & os) const {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    double mean = 0.0, sum = 0.0,
-          min = std::numeric_limits<double>::max(),
-          max = std::numeric_limits<double>::min();
-
-    // Does fd here (Atlas) provide max, min, mean functions as c++ std does,
-    // Since normally Increment does not have missing_values?
-    for (int i = 0; i < size; i++) {
-      if (fd(i) < min) min = fd(i);
-      if (fd(i) > max) max = fd(i);
-      sum += fd(i);
-    }
-    mean = sum / (1.0*size);
-
-    os << "min = " << min << ", max = " << max << ", mean = " << mean
-       << std::endl;
   }
 
 // ----------------------------------------------------------------------------

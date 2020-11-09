@@ -13,6 +13,7 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
+#include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
 
 // forward declarations
@@ -25,15 +26,19 @@ namespace atlas {
   class FieldSet;
 }
 
+
 // ----------------------------------------------------------------------------
 
 namespace oisst {
 
-  class Fields : public util::Serializable {
+  class Fields : public util::Serializable,
+                 public util::Printable {
    public:
+    // Constructors/destructors
     Fields(const Geometry & , const oops::Variables & ,
            const util::DateTime &);
     Fields(const Fields &);
+    ~Fields() {}
 
     // math operators
     Fields & operator =(const Fields &);
@@ -61,11 +66,14 @@ namespace oisst {
     std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
-   public:
+   protected:
     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
     std::shared_ptr<const Geometry> geom_;
     util::DateTime time_;
     oops::Variables vars_;
+
+   private:
+    void print(std::ostream &) const override;
   };
 }  // namespace oisst
 

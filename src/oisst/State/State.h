@@ -8,8 +8,6 @@
 #ifndef OISST_STATE_STATE_H_
 #define OISST_STATE_STATE_H_
 
-#include <memory>
-#include <ostream>
 #include <string>
 
 #include "oisst/Fields/Fields.h"
@@ -17,9 +15,13 @@
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
-#include "oops/util/Printable.h"
 
 // forward declarations
+namespace oisst {
+  class Geometry;
+  class Increment;
+}
+
 namespace eckit {
   class Configuration;
 }
@@ -27,18 +29,13 @@ namespace ufo {
   class GeoVaLs;
   class Locations;
 }
-namespace oisst {
-  class Geometry;
-  class Increment;
-}
 
 // ----------------------------------------------------------------------------
 
 namespace oisst {
 
   // State class
-  class State : public util::Printable,
-                private util::ObjectCounter<State>,
+  class State : private util::ObjectCounter<State>,
                 public oisst::Fields {
    public:
     static const std::string classname() {return "oisst::State";}
@@ -53,9 +50,6 @@ namespace oisst {
 
     // wrappers of methods that are fully implemented in Fields
     State & operator+=(const Increment &);
-
-   private:
-     void print(std::ostream &) const;
   };
 }  // namespace oisst
 

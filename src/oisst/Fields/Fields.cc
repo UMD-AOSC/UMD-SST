@@ -5,6 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <limits>
 #include <string>
 
 #include "netcdf"
@@ -13,8 +14,8 @@
 #include "oisst/Geometry/Geometry.h"
 #include "oisst/State/State.h"
 
-#include "atlas/field.h"
 #include "atlas/array.h"
+#include "atlas/field.h"
 #include "atlas/option.h"
 
 #include "oops/util/abor1_cpp.h"
@@ -280,6 +281,39 @@ namespace oisst {
     oops::Log::info() << "Fields::write(), Successfully write data to file!"
                       << std::endl;
   }
+
+// ----------------------------------------------------------------------------
+
+  void Fields::print(std::ostream & os) const {
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    const int size = geom_->atlasFunctionSpace()->size();
+    double missing = util::missingValue(missing);
+
+    double mean = 0.0, sum = 0.0,
+           min = std::numeric_limits<double>::max(),
+           max = std::numeric_limits<double>::min();
+    int nValid = 0;
+
+    for (int i = 0; i < size; i++)
+      if (fd(i) != missing) {
+        if (fd(i) < min) min = fd(i);
+        if (fd(i) > max) max = fd(i);
+
+        sum += fd(i);
+        nValid++;
+      }
+
+    if (nValid == 0) {
+      mean = 0.0;
+      oops::Log::debug() << "State::print(), nValid == 0!" << std::endl;
+    } else {
+      mean = sum / (1.0*nValid);
+    }
+
+    os << "min = " << min << ", max = " << max << ", mean = " << mean
+       << std::endl;
+  }
+
 // ----------------------------------------------------------------------------
 
 }  // namespace oisst

@@ -11,14 +11,11 @@
 #ifndef OISST_INCREMENT_INCREMENT_H_
 #define OISST_INCREMENT_INCREMENT_H_
 
-#include <memory>
-#include <ostream>
 #include <string>
 
 #include "oisst/Fields/Fields.h"
 
 #include "oops/base/GeneralizedDepartures.h"
-#include "oops/util/Printable.h"
 
 // forward declarations
 namespace oops {
@@ -39,7 +36,6 @@ namespace oisst {
 
   // Increment class
   class Increment : public oops::GeneralizedDepartures,
-                    public util::Printable,
                     private util::ObjectCounter<Increment>,
                     public oisst::Fields {
    public:
@@ -53,10 +49,12 @@ namespace oisst {
     Increment(const Increment &);
     ~Increment();
 
+    // wrappers of methods that are fully implemented in Fields
+    Increment & operator+=(const Increment &);
+
     // Math operators
     Increment & operator =(const Increment &);
     Increment & operator-=(const Increment &);
-    Increment & operator+=(const Increment &);
     Increment & operator*=(const double &);
     void axpy(const double &, const Increment &, const bool check = true);
     void diff(const State &, const State &);
@@ -69,9 +67,6 @@ namespace oisst {
 
     // dirac
     void dirac(const eckit::Configuration &);
-
-   private:
-    void print(std::ostream &) const override;
   };
 }  // namespace oisst
 
