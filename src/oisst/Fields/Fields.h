@@ -26,7 +26,6 @@ namespace atlas {
   class FieldSet;
 }
 
-
 // ----------------------------------------------------------------------------
 
 namespace oisst {
@@ -69,6 +68,7 @@ namespace oisst {
    protected:
     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
     std::shared_ptr<const Geometry> geom_;
+    const double missing_;
     util::DateTime time_;
     oops::Variables vars_;
 

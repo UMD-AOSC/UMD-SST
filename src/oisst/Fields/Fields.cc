@@ -31,10 +31,10 @@ namespace oisst {
 
   Fields::Fields(const Geometry & geom, const oops::Variables & vars,
                  const util::DateTime & vt)
-    : geom_(new Geometry(geom)), time_(vt), vars_(vars) {
+    : geom_(new Geometry(geom)), missing_(util::missingValue(this->missing_)),
+      time_(vt), vars_(vars) {
     // the constructor that gets called by everything (all State
     //  and Increment constructors ultimately end up here)
-
     if (vars_.size() != 1) {
       util::abor1_cpp("Fields::Fields(), vars_.size() != 1",
                        __FILE__, __LINE__);
@@ -76,13 +76,12 @@ namespace oisst {
 
   Fields & Fields::operator+=(const Fields &other) {
     const int size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
     auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
     auto fd_other = make_view<double, 1>(other.atlasFieldSet_->field(0));
 
     for (int j = 0; j < size; j++) {
-      if (fd(j) == missing || fd_other(j) == missing)
-        fd(j) = missing;
+      if (fd(j) == missing_ || fd_other(j) == other.missing_)
+        fd(j) = missing_;
       else
         fd(j) += fd_other(j);
     }
@@ -94,13 +93,12 @@ namespace oisst {
 
   void Fields::accumul(const double &zz, const Fields &rhs) {
     const size_t size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
 
     for (size_t i = 0; i < size; i++) {
-      if (fd(i) == missing || fd_rhs(i) == missing)
-        fd(i) = missing;
+      if (fd(i) == missing_ || fd_rhs(i) == missing_)
+        fd(i) = missing_;
       else
         fd(i) +=  zz*fd_rhs(i);
     }
@@ -110,13 +108,12 @@ namespace oisst {
 
   double Fields::norm() const {
     const int size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
 
     int nValid = 0;
     double norm = 0.0, s = 0.0;
     for (int i = 0; i < size; i++) {
-      if (fd(i) != missing) {
+      if (fd(i) != missing_) {
         nValid += 1;
         s += fd(i)*fd(i);
       }
@@ -134,9 +131,7 @@ namespace oisst {
 
   void Fields::zero() {
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-
     const int size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
 
     for (int i = 0; i < size; i++)
         fd(i) = 0.0;
@@ -196,12 +191,11 @@ namespace oisst {
 
     // mask missing values
     const double epsilon = 1.0e-6;
-    const double missing = util::missingValue(missing);
     const double missing_nc = -32768.0;
     for (int j = 0; j < lat; j++)
       for (int i = 0; i < lon; i++)
         if (abs(sstData[j][i]-(missing_nc)) < epsilon)
-          sstData[j][i] = missing;
+          sstData[j][i] = missing_;
 
     // float to double
     int idx = 0;
@@ -264,12 +258,11 @@ namespace oisst {
 
     // write data to the file
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    const double missing = util::missingValue(missing);
     float sstData[time][lat][lon];
     int idx = 0;
     for (int j = 0; j < lat; j++)
       for (int i = 0; i < lon; i++) {
-        if (fd(idx) == missing)
+        if (fd(idx) == missing_)
           sstData[0][j][i] = fillvalue;
         else
           sstData[0][j][i] = static_cast<float>(fd(idx));
@@ -287,15 +280,13 @@ namespace oisst {
   void Fields::print(std::ostream & os) const {
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
-    double missing = util::missingValue(missing);
-
     double mean = 0.0, sum = 0.0,
            min = std::numeric_limits<double>::max(),
            max = std::numeric_limits<double>::min();
     int nValid = 0;
 
     for (int i = 0; i < size; i++)
-      if (fd(i) != missing) {
+      if (fd(i) != missing_) {
         if (fd(i) < min) min = fd(i);
         if (fd(i) > max) max = fd(i);
 

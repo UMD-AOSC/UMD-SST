@@ -17,7 +17,6 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
-#include "oops/util/missingValues.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
