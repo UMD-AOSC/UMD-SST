@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2020 UCAR, University of Maryland
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,21 +10,9 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "atlas/array.h"
-#include "atlas/field.h"
-#include "atlas/option.h"
-
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
-
-#include "ufo/GeoVaLs.h"
-#include "ufo/Locations.h"
-
-// using namespace netCDF;
-using atlas::array::make_view;
-using atlas::option::name;
-
 
 namespace oisst {
 

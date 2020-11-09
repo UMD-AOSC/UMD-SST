@@ -1,11 +1,8 @@
 /*
- * (C) Copyright 2019-2020 UCAR.
+ * (C) Copyright 2020-2020 UCAR, University of Maryland
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
- * In applying this licence, ECMWF does not waive the privileges and immunities
- * granted to it by virtue of its status as an intergovernmental organisation nor
- * does it submit to any jurisdiction.
  */
 
 #ifndef OISST_INCREMENT_INCREMENT_H_
@@ -59,11 +56,11 @@ namespace oisst {
     void axpy(const double &, const Increment &, const bool check = true);
     void diff(const State &, const State &);
     double dot_product_with(const Increment &) const;
+    void ones();
     void random();
     void schur_product_with(const Increment &);
     void zero();
     void zero(const util::DateTime &);
-    void ones();
 
     // dirac
     void dirac(const eckit::Configuration &);

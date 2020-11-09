@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020-2020 UCAR
+ * (C) Copyright 2020-2020 UCAR, University of Maryland
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -43,13 +43,13 @@ namespace oisst {
     Fields & operator =(const Fields &);
     Fields & operator+=(const Fields &);
     void accumul(const double &, const Fields &);
-    void zero();
     double norm() const;
+    void zero();
 
     // time manipulation
     void updateTime(const util::Duration & dt) { time_ += dt; }
-    const util::DateTime & validTime() const { return time_; }
     util::DateTime & validTime() { return time_; }
+    const util::DateTime & validTime() const { return time_; }
 
     // I/O
     void read(const eckit::Configuration &);

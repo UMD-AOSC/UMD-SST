@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2020 UCAR, University of Maryland
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -15,18 +15,13 @@
 
 #include "atlas/field.h"
 #include "atlas/array.h"
-#include "atlas/option.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
-#include "ufo/GeoVaLs.h"
-#include "ufo/Locations.h"
-
 using atlas::array::make_view;
-using atlas::option::name;
 
 
 namespace oisst {
@@ -98,13 +93,11 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator *=(const double &zz) {
+    auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      for (int j = 0; j < size; j++)
-        fd(j) *= zz;
-    }
+    for (int j = 0; j < size; j++)
+      fd(j) *= zz;
 
     return *this;
   }
@@ -150,6 +143,13 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
+  void Increment::ones() {
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    fd.assign(1.0);
+  }
+
+// ----------------------------------------------------------------------------
+
   void Increment::random() {
     auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
@@ -174,14 +174,9 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::zero() {
+    // Need this wrapper because the overridden zero(time) would otherwise
+    // interfere
     Fields::zero();
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::ones() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    fd.assign(1.0);
   }
 
 // ----------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020-2020 UCAR
+ * (C) Copyright 2020-2020 UCAR, University of Maryland
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -139,18 +139,6 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  std::shared_ptr<const Geometry> Fields::geometry() const {
-    return geom_;
-  }
-
-// ----------------------------------------------------------------------------
-
-  std::shared_ptr<atlas::FieldSet> Fields::atlasFieldSet() const {
-    return atlasFieldSet_;
-  }
-
-// ----------------------------------------------------------------------------
-
   void Fields::read(const eckit::Configuration & conf) {
     int time = 0, lon = 0, lat = 0;
     std::string filename;
@@ -273,6 +261,18 @@ namespace oisst {
 
     oops::Log::info() << "Fields::write(), Successfully write data to file!"
                       << std::endl;
+  }
+
+// ----------------------------------------------------------------------------
+
+  std::shared_ptr<const Geometry> Fields::geometry() const {
+    return geom_;
+  }
+
+// ----------------------------------------------------------------------------
+
+  std::shared_ptr<atlas::FieldSet> Fields::atlasFieldSet() const {
+    return atlasFieldSet_;
   }
 
 // ----------------------------------------------------------------------------
