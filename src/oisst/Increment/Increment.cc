@@ -47,6 +47,7 @@ namespace oisst {
   Increment::Increment(const Geometry & geom, const Increment & other)
     : Fields(other) {
     // it will normally be used for interpolation and change resolution.
+    // For now, just copy without interpolation.
   }
 
 // ----------------------------------------------------------------------------
@@ -240,127 +241,6 @@ namespace oisst {
 
     os << "min = " << min << ", max = " << max << ", mean = " << mean
        << std::endl;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::read(const eckit::Configuration & conf) {
-    int time = 0, lon = 0, lat = 0, iread = 0;
-    std::string sdate, filename, record;
-
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    // get filename
-    if (!conf.get("filename", filename))
-      util::abor1_cpp("Increment::read(), Get filename failed.",
-        __FILE__, __LINE__);
-
-    // open netCDF file
-    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
-    if (file.isNull())
-      util::abor1_cpp("Increment::read(), Create netCDF file failed.",
-        __FILE__, __LINE__);
-
-    // get file dimensions
-    time = static_cast<int>(file.getDim("time").getSize());
-    lon  = static_cast<int>(file.getDim("lon").getSize());
-    lat  = static_cast<int>(file.getDim("lat").getSize());
-    if (time != 1 ||
-        lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) ||
-        lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
-               (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
-      util::abor1_cpp("Increment::read(), lat!=ny or lon!=nx",
-        __FILE__, __LINE__);
-    }
-
-    // get sst increment data
-    netCDF::NcVar incVar;
-    incVar = file.getVar("sst");  // Ligang: will change the var name!
-    if (incVar.isNull())
-      util::abor1_cpp("Get inc var failed.", __FILE__, __LINE__);
-
-    double incData[lat][lon];
-    incVar.getVar(incData);
-
-    int idx = 0;
-    for (int j = 0; j < lat; j++)
-      for (int i = 0; i < lon; i++)
-        fd(idx++) = incData[j][i];
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::write(const eckit::Configuration & conf) const {
-    int lat, lon, time = 1;
-    std::string filename;
-
-    // Ligang: Just for test, should NOT be here, const! put it outside.
-    // compile error, discards qualifiers [-fpermissive], "const"!
-    // random();
-
-    // get filename
-    if (!conf.get("filename", filename))
-      util::abor1_cpp("Increment::write(), Get filename failed.",
-                      __FILE__, __LINE__);
-    else
-      oops::Log::info() << "Increment::write(), filename=" << filename
-                        << std::endl;
-
-    // create netCDF file
-    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
-    if (file.isNull())
-      util::abor1_cpp("Increment::write(), Create netCDF file failed.",
-                      __FILE__, __LINE__);
-
-    // define dims
-    lat = geom_->atlasFunctionSpace()->grid().ny();
-    lon =((atlas::RegularLonLatGrid)(geom_->atlasFunctionSpace()->grid())).nx();
-
-    // unlimited dim if without size parameter, then it'll be 0,
-    // what about the size?
-    netCDF::NcDim timeDim = file.addDim("time", 1);
-    netCDF::NcDim latDim  = file.addDim("lat" , lat);
-    netCDF::NcDim lonDim  = file.addDim("lon" , lon);
-    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
-      util::abor1_cpp("Increment::write(), Define dims failed.",
-                      __FILE__, __LINE__);
-
-    std::vector<netCDF::NcDim> dims;
-    dims.push_back(timeDim);
-    dims.push_back(latDim);
-    dims.push_back(lonDim);
-
-    // Lignag: define coordinate vars "lat" and "lon"
-
-    // Ligang: define units atts for coordinate vars
-
-    // define data vars, will change the name later.
-
-    netCDF::NcVar incVar = file.addVar(std::string("increment")
-                         , netCDF::ncDouble, dims);
-
-    // Ligang: define units atts for data vars
-    incVar.putAtt("units", "K");
-    incVar.putAtt("_FillValue", netCDF::NcDouble(), -32768.);
-    incVar.putAtt("missing_value", netCDF::NcDouble(), -32768.);
-
-
-    // write data to the file
-    // Ligang: compile failed, rank should be 1, not 2, related to init?
-//  auto field_data = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-
-    double incData[time][lat][lon];
-    int idx = 0;
-    for (int i = 0; i < lat; i++)
-      for (int j = 0; j < lon; j++)
-        incData[0][i][j] = fd(idx++);
-
-    incVar.putVar(incData);
-
-    oops::Log::info() << "Increment::write(), Successfully write data to file!"
-                      << std::endl;
   }
 
 // ----------------------------------------------------------------------------

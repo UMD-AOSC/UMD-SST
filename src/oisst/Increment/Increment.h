@@ -70,10 +70,6 @@ namespace oisst {
     // dirac
     void dirac(const eckit::Configuration &);
 
-    // I/O
-    void read(const eckit::Configuration &);
-    void write(const eckit::Configuration &) const;
-
    private:
     void print(std::ostream &) const override;
   };

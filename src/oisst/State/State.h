@@ -54,11 +54,6 @@ namespace oisst {
     // wrappers of methods that are fully implemented in Fields
     State & operator+=(const Increment &);
 
-
-    // I/O
-    void read(const eckit::Configuration &);
-    void write(const eckit::Configuration &) const;
-
    private:
      void print(std::ostream &) const;
   };

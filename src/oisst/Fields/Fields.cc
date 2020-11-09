@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "netcdf"
+
 #include "oisst/Fields/Fields.h"
 #include "oisst/Geometry/Geometry.h"
 #include "oisst/State/State.h"
@@ -16,6 +18,7 @@
 #include "atlas/option.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
 using atlas::array::make_view;
@@ -150,6 +153,133 @@ namespace oisst {
     return atlasFieldSet_;
   }
 
+// ----------------------------------------------------------------------------
+
+  void Fields::read(const eckit::Configuration & conf) {
+    int time = 0, lon = 0, lat = 0;
+    std::string filename;
+
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    const int size = geom_->atlasFunctionSpace()->size();
+
+    // get filename
+    if (!conf.get("filename", filename))
+      util::abor1_cpp("Increment::read(), Get filename failed.",
+        __FILE__, __LINE__);
+
+    // open netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
+    if (file.isNull())
+      util::abor1_cpp("Increment::read(), Create netCDF file failed.",
+        __FILE__, __LINE__);
+
+    // get file dimensions
+    time = static_cast<int>(file.getDim("time").getSize());
+    lon  = static_cast<int>(file.getDim("lon").getSize());
+    lat  = static_cast<int>(file.getDim("lat").getSize());
+    if (time != 1 ||
+        lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) ||
+        lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
+               (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
+      util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
+        __FILE__, __LINE__);
+    }
+
+    // get sst data
+    netCDF::NcVar sstVar;
+    sstVar = file.getVar("sst");
+    if (sstVar.isNull())
+      util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
+    float  sstData[lat][lon];
+    sstVar.getVar(sstData);  // if used double, read-in data would be wrong.
+
+    // mask missing values
+    const double epsilon = 1.0e-6;
+    const double missing = util::missingValue(missing);
+    const double missing_nc = -32768.0;
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++)
+        if (abs(sstData[j][i]-(missing_nc)) < epsilon)
+          sstData[j][i] = missing;
+
+    // float to double
+    int idx = 0;
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++)
+        fd(idx++) = static_cast<double>(sstData[j][i]);
+  }
+
+// ----------------------------------------------------------------------------
+
+  void Fields::write(const eckit::Configuration & conf) const {
+    int lat, lon, time = 1;
+    std::string filename;
+
+    // get filename
+    if (!conf.get("filename", filename))
+      util::abor1_cpp("Increment::write(), Get filename failed.",
+                      __FILE__, __LINE__);
+    else
+      oops::Log::info() << "Increment::write(), filename=" << filename
+                        << std::endl;
+
+    // create netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
+    if (file.isNull())
+      util::abor1_cpp("Increment::write(), Create netCDF file failed.",
+                      __FILE__, __LINE__);
+
+    // define dims
+    lat = geom_->atlasFunctionSpace()->grid().ny();
+    lon =((atlas::RegularLonLatGrid)(geom_->atlasFunctionSpace()->grid())).nx();
+
+    // unlimited dim if without size parameter, then it'll be 0,
+    // what about the size?
+    netCDF::NcDim timeDim = file.addDim("time", 1);
+    netCDF::NcDim latDim  = file.addDim("lat" , lat);
+    netCDF::NcDim lonDim  = file.addDim("lon" , lon);
+    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
+      util::abor1_cpp("Increment::write(), Define dims failed.",
+                      __FILE__, __LINE__);
+
+    std::vector<netCDF::NcDim> dims;
+    dims.push_back(timeDim);
+    dims.push_back(latDim);
+    dims.push_back(lonDim);
+
+    // Lignag: define coordinate vars "lat" and "lon"
+    // Ligang: define units atts for coordinate vars
+
+    // inside OISSTv3/JEDI, use double, read/write use float
+    // to make it consistent with the netCDF files.
+    netCDF::NcVar sstVar = file.addVar(std::string("sst"),
+                                       netCDF::ncFloat, dims);
+
+    // define units atts for data vars
+    const float fillvalue = -32768.0;
+    sstVar.putAtt("units", "K");
+    sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
+    sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
+
+    // write data to the file
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    const double missing = util::missingValue(missing);
+    float sstData[time][lat][lon];
+    int idx = 0;
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++) {
+        if (fd(idx) == missing)
+          sstData[0][j][i] = fillvalue;
+        else
+          sstData[0][j][i] = static_cast<float>(fd(idx));
+        idx++;
+      }
+
+    sstVar.putVar(sstData);
+
+    oops::Log::info() << "Fields::write(), Successfully write data to file!"
+                      << std::endl;
+  }
 // ----------------------------------------------------------------------------
 
 }  // namespace oisst

@@ -47,6 +47,10 @@ namespace oisst {
     const util::DateTime & validTime() const { return time_; }
     util::DateTime & validTime() { return time_; }
 
+    // I/O
+    void read(const eckit::Configuration &);
+    void write(const eckit::Configuration &) const;
+
     // Serialization (not needed by our project)
     size_t serialSize() const override { return 0; }
     void serialize(std::vector<double> &) const override {}
