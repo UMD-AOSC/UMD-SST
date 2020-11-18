@@ -11,6 +11,7 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/generic/InterpolatorUnstructured.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -24,16 +25,14 @@ namespace umdsst {
   GetValues::GetValues(const Geometry & geom,
                        const ufo::Locations & locs)
     : geom_(new Geometry(geom)), locs_(locs) {
-    util::abor1_cpp("GetValues::GetValues() needs to be implemented.",
-                    __FILE__, __LINE__);
+    oops::InterpolatorUnstructured interpolator(eckit::LocalConfiguration(),
+                                                *geom_->atlasFunctionSpace(),
+                                                locs_.atlasFunctionSpace());
   }
 
 // -----------------------------------------------------------------------------
 
-  GetValues::~GetValues() {
-    util::abor1_cpp("GetValues::~GetValues() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
+  GetValues::~GetValues() { }
 
 // ----------------------------------------------------------------------------
 
@@ -41,8 +40,6 @@ namespace umdsst {
                               const util::DateTime & t1,
                               const util::DateTime & t2,
                               ufo::GeoVaLs & geovals) const {
-    util::abor1_cpp("GetValues::fillGeoVaLs() needs to be implemented.",
-                     __FILE__, __LINE__);
   }
 
 // ----------------------------------------------------------------------------
