@@ -37,6 +37,8 @@ namespace umdsst {
         return *functionSpace_;
     }
 
+    const ufo::Locations & locs() const { return locs_; }
+
    private:
      const ufo::Locations locs_;
      std::unique_ptr<atlas::functionspace::PointCloud> functionSpace_;

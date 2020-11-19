@@ -9,4 +9,5 @@ umdsst_target_sources(
     LocationsWrapper.h
     LocationsWrapper.f90
     GeoVaLsWrapper.h
+    GeoVaLsWrapper.f90
 )
