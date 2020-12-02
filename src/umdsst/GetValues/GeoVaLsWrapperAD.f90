@@ -46,7 +46,7 @@ subroutine geovals_wrapper_ad_fill( c_key_geovals, c_key_locs, c_t1, c_t2, c_fie
     nval=1
     field_data = 0.0   
 
-    ! fill the geovals, obeying the time masking
+    ! fill the field_data from geovals, obeying the time masking
     do i=1, size(time_mask)
         if (time_mask(i)) then
             field_data(:,i) = geovals%geovals(ivar)%vals(:,i)
