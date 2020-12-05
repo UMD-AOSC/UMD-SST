@@ -61,9 +61,7 @@ function(umdsst_exe_test)
   LIST(GET ARG_TOL 1 TOL_I)
 
   # determine if floating point error trapping should be set
-  if (DEFINED ENV{OOPS_TRAPFPE})
-    set (TRAPFPE_ENV $ENV{OOPS_TRAPFPE})
-  elseif( ARG_NOTRAPFPE)
+  if( ARG_NOTRAPFPE)
     set ( TRAPFPE_ENV "OOPS_TRAPFPE=0")
   else()
     set ( TRAPFPE_ENV "OOPS_TRAPFPE=1")
