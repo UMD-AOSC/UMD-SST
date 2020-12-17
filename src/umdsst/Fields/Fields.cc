@@ -151,6 +151,8 @@ namespace umdsst {
                          atlas::option::global());
 
     // following code block should execute on the root PE only
+    // Ligang: How do you do to decide which PEs to run with Atlas? 
+    // Check the above Fields::norm() which sums results across PEs.
     if ( globalSst.size() != 0 ) {
       int time = 0, lon = 0, lat = 0;
       std::string filename;
@@ -220,18 +222,36 @@ namespace umdsst {
         atlas::option::global());
     geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field(0), globalSst);
 
+    // Ligang: for debug
+    std::vector<int> idx_tmp {3620, 9050, 18100, 27150, 36200, 45250, 54300, 63350, 3630};
+
+    auto fd_field = make_view<double, 2>(atlasFieldSet_->field(0));
+    for (int i = 0; i < idx_tmp.size(); i++) {
+      oops::Log::info() << "In Fields::write(), field, i = " << i << ", idx = "
+        << idx_tmp[i] << ", fd_field(idx, 0) = " << fd_field(idx_tmp[i], 0) << std::endl;
+    } 
+
+    auto fd_globalSst = make_view<double, 2>(globalSst);
+    for (int i = 0; i < idx_tmp.size(); i++) {
+      oops::Log::info() << "In Fields::write(), globalSst, i = " << i 
+        << ", idx = " << idx_tmp[i] << ", fd_globalSst(idx, 0) = " << fd_globalSst(idx_tmp[i], 0) 
+        << std::endl;
+    } 
+
+
     // The following code block should execute on the root PE only
     if ( globalSst.size() != 0 ) {
       int lat, lon, time = 1;
       std::string filename;
 
       // get filename
-      if (!conf.get("filename", filename))
+      if (!conf.get("filename", filename)) {
         util::abor1_cpp("Fields::write(), Get filename failed.",
                         __FILE__, __LINE__);
-      else
+      } else {
         oops::Log::info() << "Fields::write(), filename=" << filename
                           << std::endl;
+      }
 
       // create netCDF file
       netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);

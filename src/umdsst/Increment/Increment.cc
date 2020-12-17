@@ -210,11 +210,34 @@ namespace umdsst {
     for (int i = 0; i < dir_size; i++)
       ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
+    // Ligang: for debug
+    oops::Log::info() << "In Increment::dirac(), ny = " << ny << ", nx = " 
+                      << nx << std::endl;
+    oops::Log::info() << "dir_size = " << dir_size << ", (ixdir, iydir): "
+                      << std::endl;
+    for (int i = 0; i < dir_size; i++)
+      oops::Log::info() << "(" << ixdir[i] << ", " << iydir[i] << "), ";
+    oops::Log::info() << std::endl; 
+
+
     auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     for (int i = 0; i < dir_size; i++) {
       int idx = ixdir[i] + iydir[i]*nx;
       fd(idx, 0) = 1.0;
+
+      // Ligang: For debug
+      oops::Log::info() << "In dirac() 1, i = " << i << ", idx = " << idx << ", fd(idx, 0) = "
+                        << fd(idx, 0) << std::endl;
     }
+    fd(400*200, 0) = 1.0; 
+
+    // Ligang: For debug
+    for (int i = 0; i < dir_size; i++) {
+      int idx = ixdir[i] + iydir[i]*nx;
+      oops::Log::info() << "In dirac() 2, i = " << i << ", idx = " << idx << ", fd(idx, 0) = "
+                        << fd(idx, 0) << std::endl;
+    }
+    oops::Log::info() << "fd(400*200, 0) = " << fd(400*200, 0) << std::endl; 
   }
 
 // ----------------------------------------------------------------------------
