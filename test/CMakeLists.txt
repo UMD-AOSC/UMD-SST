@@ -7,10 +7,12 @@ list( APPEND umdsst_test_input
   testinput/lineargetvalues.yml
   testinput/modelaux.yml
   testinput/state.yml
+  testinput/dirac.yml
   )
 
 list( APPEND umdsst_test_ref
   testref/hofx_nomodel.ref
+  testref/dirac.ref
   )
 
 list( APPEND umdsst_test_data
