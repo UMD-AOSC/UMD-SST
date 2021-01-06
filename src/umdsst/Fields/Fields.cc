@@ -146,6 +146,7 @@ namespace umdsst {
 
   void Fields::read(const eckit::Configuration & conf) {
     // create a global field valid on the root PE
+    // Ligang: root PE by atlas::option::global() to specify?
     atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
                          atlas::option::levels(1) |
                          atlas::option::global());
@@ -195,12 +196,17 @@ namespace umdsst {
       const double missing_nc = -32768.0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++)
-          if (abs(sstData[j][i]-(missing_nc)) < epsilon)
+          if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
             sstData[j][i] = missing_;
-          else
+          } else {
             // Kelvin to Celsius which JEDI use internally, will check if the
             // units is Kelvin or Celsius in the future
-            sstData[j][i] -= 273.15;
+            bool isKelvin = false;
+            if (conf.get("kelvin", isKelvin) && isKelvin)
+              sstData[j][i] -= 273.15;
+            else
+              continue;  // do nothing, for readability
+          }
 
       // float to double
       int idx = 0;
@@ -282,13 +288,17 @@ namespace umdsst {
       int idx = 0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++) {
-          if (fd(idx, 0) == missing_)
+          if (fd(idx, 0) == missing_) {
             sstData[0][j][i] = fillvalue;
-          else
+          } else {
             // doulbe to float, also convert JEDI Celsius to Kelvin, in the
             // future it should be able to handle both Kelvin and Celsius.
-            sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
-
+            bool isKelvin = false;
+            if (conf.get("kelvin", isKelvin) && isKelvin)
+              sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
+            else
+              sstData[0][j][i] = static_cast<float>(fd(idx, 0));
+          }
           idx++;
         }
 
