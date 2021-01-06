@@ -194,6 +194,7 @@ namespace umdsst {
       // mask missing values
       const double epsilon = 1.0e-6;
       const double missing_nc = -32768.0;
+      bool isKelvin = conf.getBool("kelvin", false);
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++)
           if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
@@ -201,8 +202,7 @@ namespace umdsst {
           } else {
             // Kelvin to Celsius which JEDI use internally, will check if the
             // units is Kelvin or Celsius in the future
-            bool isKelvin = false;
-            if (conf.get("kelvin", isKelvin) && isKelvin)
+            if (isKelvin)
               sstData[j][i] -= 273.15;
             else
               continue;  // do nothing, for readability
@@ -285,6 +285,7 @@ namespace umdsst {
       // write data to the file
       auto fd = make_view<double, 2>(globalSst);
       float sstData[time][lat][lon];
+      bool isKelvin = conf.getBool("kelvin", false);
       int idx = 0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++) {
@@ -293,8 +294,7 @@ namespace umdsst {
           } else {
             // doulbe to float, also convert JEDI Celsius to Kelvin, in the
             // future it should be able to handle both Kelvin and Celsius.
-            bool isKelvin = false;
-            if (conf.get("kelvin", isKelvin) && isKelvin)
+            if (isKelvin)
               sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
             else
               sstData[0][j][i] = static_cast<float>(fd(idx, 0));
