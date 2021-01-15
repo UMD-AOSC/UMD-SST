@@ -65,6 +65,11 @@ namespace umdsst {
     std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
+    // Ligang: 20210111, adjust for JEDI rep updates
+    void setAtlas(atlas::FieldSet *) const {}
+    void toAtlas(atlas::FieldSet *) const {}
+    void fromAtlas(atlas::FieldSet *) {}
+
    protected:
     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
     std::shared_ptr<const Geometry> geom_;
