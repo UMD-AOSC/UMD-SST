@@ -323,6 +323,52 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
+  void Fields::setAtlas(atlas::FieldSet * fs) const {
+    fs->add((*atlasFieldSet_)[0]);
+  }
+
+// ----------------------------------------------------------------------------
+
+  void Fields::toAtlas(atlas::FieldSet * fs_to) const {
+    const int size = geom_->atlasFunctionSpace()->size();
+
+    // Ligang: you will have segment fault with following delete/new code.
+    // if (fs_to)
+    //   delete fs_to;
+    // fs_to = new atlas::FieldSet();
+
+    for (int i = 0; i < vars_.size(); i++) {
+      std::string var_name = vars_[i];
+      atlas::Field fld_to  = geom_->atlasFunctionSpace()->createField<double>(
+                             atlas::option::levels(1) |
+                             atlas::option::name(var_name));
+
+      auto fd    = make_view<double, 2>(atlasFieldSet_->field(i));
+      auto fd_to = make_view<double, 2>(fld_to);
+      for (int j = 0; j < size; j++)
+        fd_to(j, 0) = fd(j, 0);
+
+      fs_to->add(fld_to);
+    }
+  }
+
+// ----------------------------------------------------------------------------
+
+  void Fields::fromAtlas(atlas::FieldSet * fs_from) {
+    const int size = geom_->atlasFunctionSpace()->size();
+
+    for (int i = 0; i < vars_.size(); i++) {
+      std::string var_name = vars_[i];
+
+      auto fd      = make_view<double, 2>(atlasFieldSet_->field(i));
+      auto fd_from = make_view<double, 2>(fs_from->field(i));
+      for (int j = 0; j < size; j++)
+        fd(j, 0) = fd_from(j, 0);
+    }
+  }
+
+// ----------------------------------------------------------------------------
+
   void Fields::print(std::ostream & os) const {
     auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();

@@ -54,7 +54,7 @@ namespace umdsst {
     }
 
     // Ligang: 20210111, adjust for JEDI rep updates.
-    atlas::FieldSet * atlasFieldSet() const {}
+    atlas::FieldSet * atlasFieldSet() const;
 
    private:
     void print(std::ostream &) const;

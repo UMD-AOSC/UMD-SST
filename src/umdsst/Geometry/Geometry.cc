@@ -8,6 +8,7 @@
 #include "umdsst/Geometry/Geometry.h"
 
 #include "eckit/config/Configuration.h"
+#include "atlas/field.h"
 
 #include "atlas/grid.h"
 
@@ -46,6 +47,14 @@ namespace umdsst {
       ((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx() );
 
     os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
+  }
+
+// ----------------------------------------------------------------------------
+
+  atlas::FieldSet * Geometry::atlasFieldSet() const {
+    atlas::FieldSet * fs = new atlas::FieldSet();
+    fs->add(atlasFunctionSpace_->lonlat());
+    return fs;
   }
 
 // ----------------------------------------------------------------------------
