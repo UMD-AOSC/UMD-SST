@@ -16,17 +16,10 @@ background error:
   bump:
     verbosity: main
     datadir: Data
-    forced_radii: 1
     method: cor
-    new_nicas: 1
-    ntry: 3
+    load_nicas: 1
     prefix: Chen
-    resol: 6.0
     mpicom: 2
-    rh:
-      sea_surface_temperature: [3000.0e3]
-    rv:
-      sea_surface_temperature: [1]
     strategy: specific_univariate
 
 dirac:

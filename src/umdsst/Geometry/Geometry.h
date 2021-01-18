@@ -54,7 +54,9 @@ namespace umdsst {
     }
 
     // Ligang: 20210111, adjust for JEDI rep updates.
-    atlas::FieldSet * atlasFieldSet() const;
+    atlas::FieldSet* atlasFieldSet() const {
+      return atlasFieldSet_.get();
+    }
 
    private:
     void print(std::ostream &) const;
@@ -62,6 +64,7 @@ namespace umdsst {
 
     std::unique_ptr<atlas::functionspace::StructuredColumns>
       atlasFunctionSpace_;
+    std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace umdsst
 

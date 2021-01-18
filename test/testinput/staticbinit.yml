@@ -28,13 +28,3 @@ background error:
     rv:
       sea_surface_temperature: [1]
     strategy: specific_univariate
-
-initial condition:
-  date: 2010-01-01T12:00:00Z
-  filename: Data/19850101_regridded_sst.nc
-  state variables: [sea_surface_temperature]
-output B:
-  datadir: Data
-  filename: Data/staticbinit.x_output.nc
-  date: 2010-01-01T12:00:00Z
-  

@@ -339,16 +339,17 @@ namespace umdsst {
 
     for (int i = 0; i < vars_.size(); i++) {
       std::string var_name = vars_[i];
-      atlas::Field fld_to  = geom_->atlasFunctionSpace()->createField<double>(
-                             atlas::option::levels(1) |
-                             atlas::option::name(var_name));
+      if (!fs_to->has_field(var_name)) {
+        atlas::Field fld_to = geom_->atlasFunctionSpace()->createField<double>(
+                 atlas::option::levels(1) |
+                 atlas::option::name(var_name));
+        fs_to->add(fld_to);
+      }
+      auto fd_to = make_view<double, 2>(fs_to->field(var_name));
 
       auto fd    = make_view<double, 2>(atlasFieldSet_->field(i));
-      auto fd_to = make_view<double, 2>(fld_to);
       for (int j = 0; j < size; j++)
         fd_to(j, 0) = fd(j, 0);
-
-      fs_to->add(fld_to);
     }
   }
 
