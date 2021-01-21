@@ -91,6 +91,10 @@ namespace umdsst {
                                       ufo::GeoVaLs & geovals) {
     oops::Variables vars = geovals.getVars();
     for (size_t i = 0; i < vars.size(); i++) {
+      // Ligang: debug
+      std::cout << "In LinearGetValues::setTrajectory(), i = " << i
+                << ", vars[i] = " << vars[i] << std::endl;
+
       // expect only sst for now
       if (vars[i] != "sea_surface_temperature")
         util::abor1_cpp("LinearGetValues::setTrajectory,unkown state variable");
