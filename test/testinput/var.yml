@@ -1,7 +1,7 @@
 cost function:
   cost type: 3D-Var
   window begin: 2018-04-15T00:00:00Z
-  window length: PT6H
+  window length: PT24H
   analysis variables: &vars [sea_surface_temperature]
   geometry:
     grid: S360x180
@@ -10,8 +10,7 @@ cost function:
       west: -180
   background:
     state variables: *vars
-#   date: 2018-04-15T00:00:00Z  # Ligang: this will result in "Assertion failed: xx.state().validTime() == windowHalf_ in runNL"
-    date: 2018-04-15T03:00:00Z  # xx.state().validTime() == windowHalf_ == 2018-04-15T03:00:00Z
+    date: 2018-04-15T12:00:00Z  # xx.state().validTime() == windowHalf_ == 2018-04-15T03:00:00Z
     filename: Data/19850101_regridded_sst.nc
   background error:
     covariance model: BUMP  # Ligang: must have, use saber lib.
@@ -25,10 +24,9 @@ cost function:
       strategy: specific_univariate
   observations:
   - obs error:
-      covariance model: BUMP
+      covariance model: diagonal
     obs operator:
-      name: AtmVertInterpLay  # Ligang: must have, value copied, ok?
-      obs type: Stream
+      name: Identity  # Ligang: must have, value copied, ok?
     obs space:
       name: sea_surface_temperature  # Ligang: must have, is the value ok?
       obsdatain: 
@@ -36,7 +34,6 @@ cost function:
       simulated variables: [sea_surface_temperature]  # Ligang: must have
       obsdataout:
         obsfile: Data/var.obs3d_output.nc
-    obs type: Stream   
  
 variational:  # Ligang: must have.
   minimizer:  # Ligang: must have.
@@ -51,17 +48,12 @@ variational:  # Ligang: must have.
       domain:
         type: global
         west: -180
-#   geometry:
-#     nx: 20
-#     ny: 10
-#     depths: [4500.0, 5500.0]
     test: on
     online diagnostics:
       write increment: true
     increment:
       datadir: Data
-      date: 2018-04-15T00:00:00Z
-#     date: 2018-04-15T03:00:00Z
+      date: 2018-04-15T12:00:00Z
       exp: 3dvar.iter1
       type: in
 # - diagnostics:
