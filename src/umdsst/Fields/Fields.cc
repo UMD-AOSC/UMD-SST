@@ -228,11 +228,17 @@ namespace umdsst {
         atlas::option::global());
     geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field(0), globalSst);
 
+    oops::Log::info() << "In Fields::write(), missing_ = " << missing_
+                      << std::endl;
+
     // The following code block should execute on the root PE only
     // Ligang: How do you do the above? Use the following if statement.
     if ( globalSst.size() != 0 ) {
       int lat, lon, time = 1;
       std::string filename;
+
+      // Ligang: debug, check conf
+//    oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
 
       // get filename
       if (!conf.get("filename", filename)) {
@@ -242,6 +248,9 @@ namespace umdsst {
         oops::Log::info() << "Fields::write(), filename=" << filename
                           << std::endl;
       }
+
+      oops::Log::info() << "In Fields::write(), Before netCDF::NcFile file()."
+                        << std::endl;
 
       // create netCDF file
       netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
@@ -282,6 +291,9 @@ namespace umdsst {
       sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
       sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
+      oops::Log::info() << "In Fields::write(), after defining sstVar."
+                        << std::endl;
+
       // write data to the file
       auto fd = make_view<double, 2>(globalSst);
       float sstData[time][lat][lon];
@@ -289,6 +301,18 @@ namespace umdsst {
       int idx = 0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++) {
+      //  oops::Log::info() << "Fields::write(), j = " << j << ", i = " << i
+      //    << ", fd(idx, 0) = " << fd(idx, 0) << std::endl;
+
+        //if (j == 62 && 318 <= i && i <= 359) {
+          if (62 <= j) {
+            sstData[0][j][i] = 0.0;
+          //oops::Log::info() << "In Fields::write(), fd(62, 319) = " 
+          //  << fd(idx, 0) << std::endl; 
+            idx++;
+            continue;
+          }
+
           if (fd(idx, 0) == missing_) {
             sstData[0][j][i] = fillvalue;
           } else {
@@ -301,6 +325,9 @@ namespace umdsst {
           }
           idx++;
         }
+
+      oops::Log::info() << "In Fields::write(), before sstVar.putVar()."
+                        << std::endl;
 
       sstVar.putVar(sstData);
 
