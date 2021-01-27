@@ -16,6 +16,7 @@ list( APPEND umdsst_test_ref
   testref/hofx_nomodel.ref
   testref/dirac.ref
   testref/staticbinit.ref
+  testref/var.ref
   )
 
 list( APPEND umdsst_test_data
