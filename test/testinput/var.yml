@@ -12,12 +12,12 @@ cost function:
 
   background:
     state variables: *vars
-    date: 2018-04-15T12:00:00Z  # xx.state().validTime() == windowHalf_ == 2018-04-15T03:00:00Z
+    date: 2018-04-15T12:00:00Z
     filename: Data/19850101_regridded_sst.nc
     kelvin: true
 
   background error:
-    covariance model: BUMP  # Ligang: must have, use saber lib.
+    covariance model: BUMP
     bump:
       verbosity: main
       datadir: Data
@@ -31,21 +31,21 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      name: Identity  # Ligang: must have, value copied, ok?
+      name: Identity
     obs filters:
     - filter: Background Check
       threshold: 8
     obs space:
-      name: sea_surface_temperature  # Ligang: must have, is the value ok?
+      name: sea_surface_temperature
       obsdatain: 
         obsfile: Data/obs_sst.nc
-      simulated variables: [sea_surface_temperature]  # Ligang: must have
+      simulated variables: [sea_surface_temperature]
       obsdataout:
         obsfile: Data/var.output.obs3d.nc
  
 
-variational:  # Ligang: must have.
-  minimizer:  # Ligang: must have.
+variational:
+  minimizer:
     algorithm: DRIPCG
 
   iterations:
@@ -53,7 +53,7 @@ variational:  # Ligang: must have.
       departures: ombg
     gradient norm reduction: 1.0e-10
     ninner: 10
-    geometry:  # Ligang: must have, values ok?
+    geometry:
       grid: S360x180
       domain:
         type: global
@@ -62,22 +62,13 @@ variational:  # Ligang: must have.
     online diagnostics:
       write increment: true
     increment:
-      datadir: Data
-      filename: Data/var.output.increment.nc  # Ligang: Must have, Data/ is needed.
-      date: 2018-04-15T12:00:00Z
-      exp: 3dvar.iter1
-      type: in
+      filename: Data/var.output.increment.nc
 
 
-final:  # Ligang: must have.
+final:
   diagnostics:
     departures: oman
 
 
-output:  # Ligang: must have.
-  datadir: Data
-  filename: var.output.final.nc
-  exp: 3dvar
-# frequency: PT6H
-  frequency: PT24H
-  type: an 
+output:
+  filename: Data/var.output.final.nc
