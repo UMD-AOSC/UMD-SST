@@ -5,14 +5,21 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include "netcdf"
+
 #include "umdsst/Geometry/Geometry.h"
 
 #include "eckit/config/Configuration.h"
-#include "atlas/field.h"
 
 #include "atlas/grid.h"
+#include "atlas/array.h"
+#include "atlas/field.h"
+#include "atlas/option.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
+
+using atlas::array::make_view;
 
 namespace umdsst {
 
@@ -27,6 +34,12 @@ namespace umdsst {
 
     atlasFieldSet_.reset(new atlas::FieldSet());
     atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
+
+    if (conf.has("landmask.filename")) {
+      oops::Log::info() << "Geometry::Geometry(), before loading landmask."
+                        << std::endl;
+      loadLandMask(conf);
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -38,11 +51,70 @@ namespace umdsst {
 
     atlasFieldSet_.reset(new atlas::FieldSet());
     atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
+
+    // Ligang: no conf parameter here.
+//  if (conf.has("landmask.filename"))
+//    loadLandMask(conf);
   }
 
 // ----------------------------------------------------------------------------
 
   Geometry::~Geometry() {}
+
+// ----------------------------------------------------------------------------
+
+  void Geometry::loadLandMask(const eckit::Configuration &conf) {
+    // use an globalLandMask to read the data on root PE only.
+    atlas::Field globalLandMask = atlasFunctionSpace_->createField<int>(
+                                  atlas::option::levels(1) |
+                                  atlas::option::name("gmask") |
+                                  atlas::option::global());
+    auto fd = make_view<int, 2>(globalLandMask);
+
+    if (globalLandMask.size() != 0) {
+      int lat = 0, lon = 0;
+      std::string filename;
+
+      if (!conf.get("landmask.filename", filename))
+        util::abor1_cpp("Geometry::loadLandMask(), Get filename failed.",
+          __FILE__, __LINE__);
+      else
+        oops::Log::info() << "In Geometry::loadLandMask(), filename = "
+                          << filename << std::endl;
+
+      // Open netCDF file
+      netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
+      if (file.isNull())
+        util::abor1_cpp("Geometry::loadLandMask(), Create netCDF file failed.",
+          __FILE__, __LINE__);
+
+      // get file dimensions
+      lat = static_cast<int>(file.getDim("lat").getSize());
+      lon = static_cast<int>(file.getDim("lon").getSize());
+
+      // get landmask data
+      netCDF::NcVar varLandMask;
+      varLandMask = file.getVar("landmask");
+      if (varLandMask.isNull())
+        util::abor1_cpp("Get var landmask failed.", __FILE__, __LINE__);
+
+      int dataLandMask[lat][lon];
+      varLandMask.getVar(dataLandMask);
+
+      int idx = 0;
+      for (int j = 0; j < 180; j++)
+        for (int i = 0; i < 360; i++)
+          fd(idx++, 0) = dataLandMask[j][i];
+    }
+
+    atlas::Field fld = atlasFunctionSpace_->createField<int>(
+                       atlas::option::levels(1) |
+                       atlas::option::name("gmask"));
+    atlasFieldSet_->add(fld);
+
+    atlasFunctionSpace_->scatter(globalLandMask,
+                                 atlasFieldSet_->field("gmask"));
+  }
 
 // ----------------------------------------------------------------------------
 
