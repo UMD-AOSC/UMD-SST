@@ -50,11 +50,10 @@ namespace umdsst {
       atlas::option::halo(0)));
 
     atlasFieldSet_.reset(new atlas::FieldSet());
-    atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
-
-    // Ligang: no conf parameter here.
-//  if (conf.has("landmask.filename"))
-//    loadLandMask(conf);
+//  atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
+    for (int i = 0; i < other.atlasFieldSet()->size(); i++) {
+      atlasFieldSet_->add((*other.atlasFieldSet())[i]);
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -125,6 +124,21 @@ namespace umdsst {
       ((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx() );
 
     os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
+
+    int nMaskedLand = 0, nUnmaskedOcean = 0,
+        nSize = atlasFunctionSpace_->size();
+    auto fd = make_view<int, 2>(atlasFieldSet_->field("gmask"));
+    for (int j = 0; j < nSize; j++) {
+      if (fd(j, 0) == 1)
+        nUnmaskedOcean += 1;
+      else if (fd(j, 0) == 0)
+        nMaskedLand += 1;
+      else
+        util::abor1_cpp("Geometry::print(), landmask neither 1 nor 0.",
+          __FILE__, __LINE__);
+    }
+    os << "Geometry: # of unmasked ocean grid = " << nUnmaskedOcean
+       << ", # of masked land grid = " << nMaskedLand << std::endl;
   }
 
 // ----------------------------------------------------------------------------
