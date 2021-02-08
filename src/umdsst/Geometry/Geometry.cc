@@ -40,6 +40,20 @@ namespace umdsst {
                         << std::endl;
       loadLandMask(conf);
     }
+
+    // add Field area
+    // Ligang: From Travis, Temporary approximation solution, for a global
+    // regular latlon grid, need to change if involved with other types of grid.
+    double dx = 2. * M_PI * atlas::util::DatumIFS::radius()
+        / atlasFunctionSpace()->grid().nxmax();
+    auto lonlat_data = make_view<double, 2>(atlasFunctionSpace_->lonlat());
+    atlas::Field area = atlasFunctionSpace_->createField<double>(
+        atlas::option::levels(1) | atlas::option::name("area"));
+    auto area_data = make_view<double, 2>(area);
+    for (int i=0; i < atlasFunctionSpace_->size(); i++) {
+      area_data(i, 0) = dx*dx*cos(lonlat_data(i, 1)*M_PI/180.);
+    }
+    atlasFieldSet_->add(area);
   }
 
 // ----------------------------------------------------------------------------
