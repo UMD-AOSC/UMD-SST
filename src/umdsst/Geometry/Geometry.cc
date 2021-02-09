@@ -115,8 +115,8 @@ namespace umdsst {
       varLandMask.getVar(dataLandMask);
 
       int idx = 0;
-      for (int j = 0; j < 180; j++)
-        for (int i = 0; i < 360; i++)
+      for (int j = 0; j < lat; j++)
+        for (int i = 0; i < lon; i++)
           fd(idx++, 0) = dataLandMask[j][i];
     }
 
