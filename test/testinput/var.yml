@@ -6,6 +6,8 @@ cost function:
 
   geometry:
     grid: S360x180
+    landmask:
+      filename: Data/landmask.nc
     domain:
       type: global
       west: -180
@@ -57,6 +59,8 @@ variational:
     ninner: 10
     geometry:
       grid: S360x180
+      landmask:
+        filename: Data/landmask.nc
       domain:
         type: global
         west: -180
