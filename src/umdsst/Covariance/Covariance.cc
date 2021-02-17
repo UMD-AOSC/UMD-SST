@@ -72,13 +72,12 @@ namespace umdsst {
     if (conf.has("correlation lengths")) {
       eckit::LocalConfiguration corrConf;
       conf.get("correlation lengths", corrConf);
-      if ( corrConf.has("fixed")) {
+      if ( corrConf.has("fixed") ) {
         // single global value for correlation length given
         double val;
         corrConf.get("fixed", val);
         param_view.assign(val);
-      }
-      else {
+      } else {
         util::abor1_cpp("Covariance::Covariance() no correlation length "
                         "method specified", __FILE__, __LINE__);
       }
