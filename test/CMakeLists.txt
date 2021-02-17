@@ -159,7 +159,8 @@ endfunction()
      SOURCES executables/TestErrorCovariance.cc
      ARGS    testinput/errorcovariance.yml
      MPI     ${MPI_PES}
-     LIBS    umdsst )
+     LIBS    umdsst
+     TEST_DEPENDS test_umdsst_staticbinit)
 
 #  ecbuild_add_test(
 #    TARGET  test_umdsst_modelauxcovariance
