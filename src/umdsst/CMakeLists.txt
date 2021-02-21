@@ -20,7 +20,7 @@ find_package( NetCDF REQUIRED COMPONENTS CXX )
 ecbuild_add_library( TARGET   umdsst
                      SOURCES  ${umdsst_src_files}
                      LIBS     ${NETCDF_LIBRARIES}
-                              eckit eckit_mpi fckit oops ioda ufo
+                              eckit eckit_mpi fckit oops ioda ufo saber
                      INSTALL_HEADERS LISTED
                      LINKER_LANGUAGE ${UMDSST_LINKER_LANGUAGE}
                     )
@@ -31,5 +31,6 @@ add_subdirectory(Fields)
 add_subdirectory(Geometry)
 add_subdirectory(GetValues)
 add_subdirectory(Increment)
+add_subdirectory(LinearVariableChange)
 add_subdirectory(ModelAux)
 add_subdirectory(State)
