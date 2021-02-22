@@ -18,7 +18,7 @@ subroutine geovals_wrapper_fill( c_key_geovals, c_locs, c_t1, c_t2, c_flds, nvar
     type(c_ptr), value, intent(in) :: c_locs
     type(c_ptr),        intent(in) :: c_t1
     type(c_ptr),        intent(in) :: c_t2
-    type(integer),      intent(in) :: nvar
+    integer(c_int),     intent(in) :: nvar
     type(c_ptr), dimension(*), intent(in) :: c_flds
 
     type(ufo_geovals), pointer :: geovals
@@ -37,7 +37,6 @@ subroutine geovals_wrapper_fill( c_key_geovals, c_locs, c_t1, c_t2, c_flds, nvar
     locs = ufo_locations(c_locs)
     call c_f_datetime(c_t1, t1)
     call c_f_datetime(c_t2, t2)
-    write(*, *) "locs%nlocs() is ", locs%nlocs()
 
     ! calculate time mask
     allocate(time_mask(locs%nlocs()))
@@ -56,7 +55,7 @@ subroutine geovals_wrapper_fill( c_key_geovals, c_locs, c_t1, c_t2, c_flds, nvar
 
     ! fill the geovals, obeying the time masking
     do ivar = 1, nvar
-        write(*, *) "In Fortran geovals_wrapper_fill(), i_var=", ivar, ", nvar=", nvar
+      ! write(*, *) "In Fortran geovals_wrapper_fill(), i_var=", ivar, ", nvar=", nvar
 
         field = atlas_field(c_flds(ivar))
         call field%data(field_data)
