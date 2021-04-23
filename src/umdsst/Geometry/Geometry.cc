@@ -15,6 +15,7 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 #include "atlas/option.h"
+#include "atlas/util/Config.h"
 
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
@@ -27,7 +28,9 @@ namespace umdsst {
 
   Geometry::Geometry(const eckit::Configuration & conf,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
-    atlas::RegularLonLatGrid atlasRllGrid(conf.getString("grid"));
+    atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
+    atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
+
     atlasFunctionSpace_.reset(
       new atlas::functionspace::StructuredColumns(atlasRllGrid,
       atlas::option::halo(0)));
