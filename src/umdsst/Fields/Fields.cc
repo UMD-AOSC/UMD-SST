@@ -210,7 +210,7 @@ namespace umdsst {
 
       // float to double
       int idx = 0;
-      for (int j = 0; j < lat; j++)
+      for (int j = lat-1; j >= 0; j--)
         for (int i = 0; i < lon; i++)
           fd(idx++, 0) = static_cast<double>(sstData[j][i]);
     }
@@ -290,7 +290,7 @@ namespace umdsst {
       float sstData[time][lat][lon];
       bool isKelvin = conf.getBool("kelvin", false);
       int idx = 0;
-      for (int j = 0; j < lat; j++)
+      for (int j = lat-1; j >= 0; j--)
         for (int i = 0; i < lon; i++) {
           if (fd(idx, 0) == missing_) {
             sstData[0][j][i] = fillvalue;

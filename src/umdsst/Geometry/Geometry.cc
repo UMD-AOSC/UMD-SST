@@ -131,8 +131,10 @@ namespace umdsst {
       int dataLandMask[lat][lon];
       varLandMask.getVar(dataLandMask);
 
+      // TODO(someone) the netcdf lat dimension is likely inverted compared to
+      // the  atlas grid. This should be explicitly checked.
       int idx = 0;
-      for (int j = 0; j < lat; j++)
+      for (int j = lat-1; j >= 0; j--)
         for (int i = 0; i < lon; i++)
           fd(idx++, 0) = dataLandMask[j][i];
     }
