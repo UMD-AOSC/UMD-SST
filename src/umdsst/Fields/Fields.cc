@@ -224,7 +224,8 @@ namespace umdsst {
     }
 
     // scatter to the PEs
-    geom_->atlasFunctionSpace()->scatter(globalSst, atlasFieldSet_->field("sea_surface_temperature"));
+    geom_->atlasFunctionSpace()->scatter(
+      globalSst, atlasFieldSet_->field("sea_surface_temperature"));
 
     // apply mask from read in landmask
     if ( (*geom_->atlasFieldSet()).has_field("gmask") ) {
@@ -245,7 +246,8 @@ namespace umdsst {
     atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
         atlas::option::levels(1) |
         atlas::option::global());
-    geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field("sea_surface_temperature"), globalSst);
+    geom_->atlasFunctionSpace()->gather(
+      atlasFieldSet_->field("sea_surface_temperature"), globalSst);
 
     // The following code block should execute on the root PE only
     // Ligang: How do you do the above? Use the following if statement.
