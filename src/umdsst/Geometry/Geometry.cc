@@ -6,15 +6,18 @@
  */
 
 #include "netcdf"
+#include <fstream>
 
 #include "umdsst/Geometry/Geometry.h"
 
+#include "eckit/container/KDTree.h"
 #include "eckit/config/Configuration.h"
 
 #include "atlas/grid.h"
 #include "atlas/array.h"
 #include "atlas/field.h"
 #include "atlas/option.h"
+#include "atlas/functionspace.h"
 #include "atlas/util/Config.h"
 
 #include "oops/util/abor1_cpp.h"
@@ -60,6 +63,9 @@ namespace umdsst {
       area_data(i, 0) = dx*dx*cos(lonlat_data(i, 1)*M_PI/180.);
     }
     atlasFieldSet_->add(area);
+
+    // add field for rossby radius
+    readRossbyRadius();
   }
 
 // ----------------------------------------------------------------------------
@@ -166,4 +172,71 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
+  void Geometry::readRossbyRadius() {
+    std::ifstream infile("Data/rossby_radius.dat");
+    std::vector<eckit::geometry::Point2> lonlat;
+    std::vector<double> vals;
+    double lat, lon, x, val;
+
+    while (infile >> lat >> lon >> x >> val) {
+      lonlat.push_back(eckit::geometry::Point2(lon, lat));
+      vals.push_back(val);
+    }
+
+    atlas::Field field = interpToGeom(lonlat, vals);
+    field.rename("rossby_radius");
+    atlasFieldSet_->add(field);
+  }
+
+// ----------------------------------------------------------------------------
+
+  atlas::Field Geometry::interpToGeom(
+    const std::vector<eckit::geometry::Point2> & srcLonLat,
+    const std::vector<double> & srcVal) const
+  {
+    struct TreeTrait {
+      typedef eckit::geometry::Point3 Point;
+      typedef double                  Payload;
+    };
+    typedef eckit::KDTreeMemory<TreeTrait> KDTree;
+    const int maxSearchPoints = 4;
+
+    // Create a KD tree for fast lookup
+    std::vector<typename KDTree::Value> srcPoints;
+    for (int i = 0; i < srcVal.size(); i++) {
+      KDTree::PointType xyz;
+      atlas::util::Earth::convertSphericalToCartesian(srcLonLat[i], xyz);
+      srcPoints.push_back(KDTree::Value(xyz, srcVal[i]) );
+    }
+    KDTree kd;
+    kd.build(srcPoints.begin(), srcPoints.end());
+
+    // Interpolate (inverse distance weighted)
+    atlas::Field dstField = atlasFunctionSpace_->createField<double>(
+      atlas::option::levels(1));
+    auto dstView = make_view<double, 2>(dstField);
+    auto dstLonLat = make_view<double, 2>(atlasFunctionSpace_->lonlat());
+    for (int i=0; i < atlasFunctionSpace_->size(); i++) {
+      eckit::geometry::Point2 dstPoint({dstLonLat(i,0),dstLonLat(i,1)});
+      eckit::geometry::Point3 dstPoint3D;
+      atlas::util::Earth::convertSphericalToCartesian(dstPoint, dstPoint3D);
+      auto points = kd.kNearestNeighbours(dstPoint3D, maxSearchPoints);
+      double sumDist = 0.0;
+      double sumDistVal = 0.0;
+      for (int n =0; n < points.size(); n++ ) {
+        if (points[n].distance() < 1.0e-6 ) {
+          sumDist = 1.0;
+          sumDistVal = points[n].payload();
+          break;
+        }
+        double w = 1.0 / (points[n].distance()*points[n].distance());
+        sumDist += w;
+        sumDistVal += w*points[n].payload();
+      }
+
+      dstView(i,0) = sumDistVal / sumDist;
+    }
+
+    return dstField;
+  }
 }  // namespace umdsst

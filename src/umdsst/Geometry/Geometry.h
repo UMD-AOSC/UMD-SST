@@ -62,6 +62,9 @@ namespace umdsst {
     }
 
    private:
+    atlas::Field interpToGeom(const std::vector<eckit::geometry::Point2> &,
+                              const std::vector<double> &) const;
+    void readRossbyRadius();
     void print(std::ostream &) const;
     const eckit::mpi::Comm & comm_;
 
