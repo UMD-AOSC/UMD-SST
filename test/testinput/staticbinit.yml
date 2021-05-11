@@ -29,4 +29,6 @@ background error:
     mpicom: 2
     strategy: specific_univariate
   correlation lengths:
-    fixed: 840.0e3
+    base value: 840.0e3
+    # rossby mult: 1.0
+    # min grid mult: 1.0
