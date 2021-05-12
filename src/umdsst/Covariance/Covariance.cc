@@ -88,7 +88,7 @@ namespace umdsst {
                                        std::numeric_limits<double>::max());
 
       auto rossbyRadius = atlas::array::make_view<double, 2>(
-        geom.atlasFieldSet()->field("rossby_radius");
+        geom.atlasFieldSet()->field("rossby_radius"));
       auto area = atlas::array::make_view<double, 2>(
          geom.atlasFieldSet()->field("area"));
 
