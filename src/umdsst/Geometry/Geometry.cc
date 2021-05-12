@@ -197,6 +197,9 @@ namespace umdsst {
     const std::vector<eckit::geometry::Point2> & srcLonLat,
     const std::vector<double> & srcVal) const
   {
+    // Interpolate the values from the given lat/lons onto the grid that is
+    // represented by this geometry. Note that this assumes each PE is
+    // presenting an identical copy of srcLonLat and srcVal.
     struct TreeTrait {
       typedef eckit::geometry::Point3 Point;
       typedef double                  Payload;
