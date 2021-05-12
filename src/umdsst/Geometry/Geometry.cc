@@ -5,8 +5,9 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "netcdf"
 #include <fstream>
+#include <vector>
+#include "netcdf"
 
 #include "umdsst/Geometry/Geometry.h"
 
@@ -65,7 +66,9 @@ namespace umdsst {
     atlasFieldSet_->add(area);
 
     // add field for rossby radius
-    readRossbyRadius();
+    if (conf.has("rossby radius file")) {
+      readRossbyRadius(conf.getString("rossby radius file"));
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -172,10 +175,8 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  void Geometry::readRossbyRadius() {
-    //TODO pass in filename
-    //std::ifstream infile("Data/rossby_radius.dat");
-    std::ifstream infile("rossby_radius.dat");
+  void Geometry::readRossbyRadius(const std::string & filename) {
+    std::ifstream infile(filename);
     std::vector<eckit::geometry::Point2> lonlat;
     std::vector<double> vals;
     double lat, lon, x, val;
@@ -219,14 +220,14 @@ namespace umdsst {
     auto dstView = make_view<double, 2>(dstField);
     auto dstLonLat = make_view<double, 2>(atlasFunctionSpace_->lonlat());
     for (int i=0; i < atlasFunctionSpace_->size(); i++) {
-      eckit::geometry::Point2 dstPoint({dstLonLat(i,0),dstLonLat(i,1)});
+      eckit::geometry::Point2 dstPoint({dstLonLat(i, 0), dstLonLat(i, 1)});
       eckit::geometry::Point3 dstPoint3D;
       atlas::util::Earth::convertSphericalToCartesian(dstPoint, dstPoint3D);
       auto points = kd.kNearestNeighbours(dstPoint3D, maxSearchPoints);
       double sumDist = 0.0;
       double sumDistVal = 0.0;
-      for (int n =0; n < points.size(); n++ ) {
-        if (points[n].distance() < 1.0e-6 ) {
+      for ( int n = 0; n < points.size(); n++ ) {
+        if ( points[n].distance() < 1.0e-6 ) {
           sumDist = 1.0;
           sumDistVal = points[n].payload();
           break;
@@ -236,7 +237,7 @@ namespace umdsst {
         sumDistVal += w*points[n].payload();
       }
 
-      dstView(i,0) = sumDistVal / sumDist;
+      dstView(i, 0) = sumDistVal / sumDist;
     }
 
     return dstField;

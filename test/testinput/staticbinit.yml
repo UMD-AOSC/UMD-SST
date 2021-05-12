@@ -6,6 +6,7 @@ geometry:
       west: -180
   landmask:
     filename: Data/landmask.nc
+  rossby radius file: Data/rossby_radius.dat
 
 analysis variables: &vars [sea_surface_temperature]  # must have
 

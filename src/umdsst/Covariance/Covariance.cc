@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <algorithm>
+#include <limits>
 #include <ostream>
 #include <string>
 
@@ -85,23 +87,24 @@ namespace umdsst {
       double maxValue = corrConf.getDouble("max value",
                                        std::numeric_limits<double>::max());
 
-      atlas::Field f_rossbyRadius = geom.atlasFieldSet()->field("rossby_radius");
-      auto rossbyRadius = atlas::array::make_view<double, 2>(f_rossbyRadius);
+      auto rossbyRadius = atlas::array::make_view<double, 2>(
+        geom.atlasFieldSet()->field("rossby_radius");
       auto area = atlas::array::make_view<double, 2>(
          geom.atlasFieldSet()->field("area"));
 
       param_view.assign(baseValue);
-      for (int i = 0; i < param_field.size(); i++ ) {
-        param_view(i,0) += rossbyMult * rossbyRadius(i,0);
-        param_view(i,0) = std::max(param_view(i,0), minGridMult*sqrt(area(i,0)));
-        param_view(i,0) = std::max(param_view(i,0), minValue);
-        param_view(i,0) = std::min(param_view(i,0), maxValue);
+      for ( int i = 0; i < param_field.size(); i++ ) {
+        param_view(i, 0) += rossbyMult * rossbyRadius(i, 0);
+        param_view(i, 0) = std::max(param_view(i, 0),
+                                    minGridMult*sqrt(area(i, 0)));
+        param_view(i, 0) = std::max(param_view(i, 0), minValue);
+        param_view(i, 0) = std::min(param_view(i, 0), maxValue);
       }
 
       // note: BUMP expects the length as a Gaspari-Cohn cutoff length,
       //   but we probably think of it as a Gaussian 1 sigma, so convert.
-      for (int i = 0; i < param_field.size(); i++ ) {
-        param_view(i,0) *= 3.57; // gaussian to GC factor
+      for ( int i = 0; i < param_field.size(); i++ ) {
+        param_view(i, 0) *= 3.57;  // gaussian to GC factor
       }
 
       param_name = "cor_rh";
