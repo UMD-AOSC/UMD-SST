@@ -173,14 +173,16 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Geometry::readRossbyRadius() {
-    std::ifstream infile("Data/rossby_radius.dat");
+    //TODO pass in filename
+    //std::ifstream infile("Data/rossby_radius.dat");
+    std::ifstream infile("rossby_radius.dat");
     std::vector<eckit::geometry::Point2> lonlat;
     std::vector<double> vals;
     double lat, lon, x, val;
 
     while (infile >> lat >> lon >> x >> val) {
       lonlat.push_back(eckit::geometry::Point2(lon, lat));
-      vals.push_back(val);
+      vals.push_back(val*1.0e3);
     }
 
     atlas::Field field = interpToGeom(lonlat, vals);

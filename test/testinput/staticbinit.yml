@@ -28,7 +28,9 @@ background error:
     resol: 6.0
     mpicom: 2
     strategy: specific_univariate
+    nc1max: 100000
   correlation lengths:
-    base value: 840.0e3
-    # rossby mult: 1.0
-    # min grid mult: 1.0
+    base value: 500.0e3
+    rossby mult: 1.0
+    min grid mult: 5.0
+    #min value: 200.0e3

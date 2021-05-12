@@ -85,8 +85,8 @@ namespace umdsst {
       double maxValue = corrConf.getDouble("max value",
                                        std::numeric_limits<double>::max());
 
-      auto rossbyRadius = atlas::array::make_view<double, 2>(
-         geom.atlasFieldSet()->field("rossby_radius"));
+      atlas::Field f_rossbyRadius = geom.atlasFieldSet()->field("rossby_radius");
+      auto rossbyRadius = atlas::array::make_view<double, 2>(f_rossbyRadius);
       auto area = atlas::array::make_view<double, 2>(
          geom.atlasFieldSet()->field("area"));
 
