@@ -21,18 +21,18 @@ ecbuild_bundle_initialize()
 #===================================================================================================
 option(BUILD_ECKIT "download and build eckit (not needed if in a jedi container)")
 if ( BUILD_ECKIT )
-  ecbuild_bundle( PROJECT eckit  GIT "https://github.com/ecmwf/eckit.git"  UPDATE TAG 1.16.0 )
+  ecbuild_bundle( PROJECT eckit  GIT "https://github.com/ecmwf/eckit.git"  UPDATE TAG b3adb28 )
 endif ()
 
 option(BUILD_FCKIT "download and build fckit (not needed if in a jedi container)")
 if (BUILD_FCKIT)
-  ecbuild_bundle( PROJECT fckit  GIT "https://github.com/jcsda/fckit.git"  UPDATE BRANCH release-stable )
+  ecbuild_bundle( PROJECT fckit  GIT "https://github.com/jcsda/fckit.git"  UPDATE TAG 8502aae )
   # TODO: replace with https://github.com/ecmwf/fckit.git TAG 0.9.2
 endif()
 
 option(BUILD_ATLAS "download and build atlas (not needed if in a jedi container)")
 if (BUILD_ATLAS)
-  ecbuild_bundle( PROJECT atlas  GIT "https://github.com/jcsda/atlas.git"  UPDATE BRANCH release-stable )
+  ecbuild_bundle( PROJECT atlas  GIT "https://github.com/jcsda/atlas.git"  UPDATE TAG e0b7709 )
   # TODO: repalce with https://github.com/ecmwf/atlas.git TAG 0.24.1
 endif()
 
@@ -40,11 +40,11 @@ endif()
 #===================================================================================================
 # required repositories
 #===================================================================================================
-ecbuild_bundle( PROJECT oops            GIT "https://github.com/jcsda/oops.git"            UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda/saber.git"           UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda/ioda.git"            UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda/ioda-converters.git" UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda/ufo.git"             UPDATE BRANCH develop )
+ecbuild_bundle( PROJECT oops            GIT "https://github.com/jcsda/oops.git"            UPDATE TAG 8f517dd )
+ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda/saber.git"           UPDATE TAG 0422a16 )
+ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda/ioda.git"            UPDATE TAG 04880ef )
+ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda/ioda-converters.git" UPDATE TAG ab0a195 )
+ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda/ufo.git"             UPDATE TAG eb2e70f )
 ecbuild_bundle( PROJECT umdsst          SOURCE ../)
 
 ecbuild_bundle_finalize()
