@@ -1,0 +1,82 @@
+cost function:
+  cost type: 3D-Var
+  window begin: 2018-04-15T00:00:00Z
+  window length: PT24H
+  analysis variables: &vars [sea_surface_temperature]
+
+  geometry: &geometry
+    grid:
+      name: S360x180
+      domain:
+        type: global
+        west: -180
+    landmask:
+      filename: Data/landmask_1x1.nc
+
+  background:
+    state variables: *vars
+    date: 2018-04-15T12:00:00Z
+    filename: Data/19850101_regridded_sst_1x1.nc
+    kelvin: true
+
+  background error:
+    covariance model: BUMP
+    bump:
+      mask_check: 1
+      network: 1
+      verbosity: main
+      datadir: Data/bump
+      method: cor
+      load_nicas: 1
+      prefix: bump_sst
+      mpicom: 2
+      strategy: specific_univariate
+    variable changes:
+    - variable change: umdsstStdDev
+      input variables: *vars
+      output variables: *vars
+      fixed: 1.0
+
+  observations:
+  - obs error:
+      covariance model: diagonal
+    obs operator:
+      name: Identity
+    obs filters:
+    - filter: Domain Check
+      where:
+      - variable: {name: sea_area_fraction@GeoVaLs}
+        minvalue: 1.0
+    obs space:
+      name: sea_surface_temperature
+      obsdatain:
+        obsfile: Data/obs_sst.nc
+      simulated variables: [sea_surface_temperature]
+      obsdataout:
+        obsfile: Data/var.output.obs3d.nc
+
+
+variational:
+  minimizer:
+    algorithm: DRIPCG
+
+  iterations:
+  - diagnostics:
+      departures: ombg
+    gradient norm reduction: 1.0e-10
+    ninner: 10
+    geometry: *geometry
+    test: on
+    online diagnostics:
+      write increment: true
+    increment:
+      filename: Data/var.output.increment.nc
+
+
+final:
+  diagnostics:
+    departures: oman
+
+
+output:
+  filename: Data/var.output.final.nc

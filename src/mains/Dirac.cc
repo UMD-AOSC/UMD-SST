@@ -5,15 +5,17 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "oisst/Traits.h"
+#include "umdsst/Traits.h"
 
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
-//  #include "saber/oops/instantiateLocalizationFactory.h"
+// #include "saber/oops/instantiateLocalizationFactory.h"
+#include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  //  saber::instantiateLocalizationFactory<oisst::Traits>();
-  oops::Dirac<oisst::Traits> dir;
+  // saber::instantiateLocalizationFactory<umdsst::Traits>();
+  saber::instantiateCovarFactory<umdsst::Traits>();
+  oops::Dirac<umdsst::Traits> dir;
   return run.execute(dir);
 }

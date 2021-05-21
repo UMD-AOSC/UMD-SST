@@ -1,0 +1,50 @@
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: Data/landmask_1x1.nc
+
+analysis variables: &vars [sea_surface_temperature]
+
+background:  # must have
+  state variables: *vars
+  date: 2018-04-15T00:00:00Z
+  filename: Data/19850101_regridded_sst_1x1.nc
+
+background error:
+  covariance model: BUMP
+  bump:
+    mask_check: 1
+    network: 1
+    verbosity: main
+    datadir: Data/bump
+    method: cor
+    load_nicas: 1
+    prefix: bump_sst
+    mpicom: 2
+    strategy: specific_univariate
+  variable changes:
+  - variable change: umdsstStdDev
+    input variables: *vars
+    output variables: *vars
+    fixed: 1.0
+
+dirac:
+  date: 2010-01-01T12:00:00Z
+  ixdir: [20, 50, 95, 100, 150, 200, 250, 300, 350]
+  iydir: [10, 25, 95, 50,  75,  100, 125, 150, 175]
+
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  filename: Data/19850101_regridded_sst_1x1.nc
+  state variables: [sea_surface_temperature]
+
+output B:
+  datadir: Data
+  filename: Data/dirac.x_output.nc
+  date: 2010-01-01T12:00:00Z
+  exp: dirac_umdsst_B
+  type: an

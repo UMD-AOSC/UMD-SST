@@ -1,11 +1,27 @@
 geometry:
-  # insert other model specific things here
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: Data/landmask_1x1.nc
+
 
 state test:
-  norm file: 0.0
-  tolerance: 1.0e-12
-  date: &date 2018-04-15T00:00:00Z
+  norm file: 17.618557808088323
+  tolerance: 1e-6
+  date: &date 1985-01-01T12:00:00Z
   statefile:
     date: *date
-    state variables: &state_vars [statevar1, statevar2]
-    # insert other model specific things here
+    filename: Data/19850101_regridded_sst_1x1.nc
+    kelvin: true
+    state variables: &state_vars [sea_surface_temperature]
+  statefileout:
+    datadir: ./Data
+    exp: out
+    type: fc
+    date: 1985-01-01T12:00:00Z
+    filename: Data/out.19850101_regridded_sst.nc
+    kelvin: true
+    state variables: *state_vars
