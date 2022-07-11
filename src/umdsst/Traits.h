@@ -12,13 +12,12 @@
 
 #include "umdsst/Covariance/Covariance.h"
 #include "umdsst/Geometry/Geometry.h"
-#include "umdsst/GetValues/GetValues.h"
-#include "umdsst/GetValues/LinearGetValues.h"
 #include "umdsst/Increment/Increment.h"
 #include "umdsst/ModelAux/ModelAuxControl.h"
 #include "umdsst/ModelAux/ModelAuxCovariance.h"
 #include "umdsst/ModelAux/ModelAuxIncrement.h"
 #include "umdsst/State/State.h"
+#include "umdsst/VariableChange/VariableChange.h"
 
 namespace umdsst {
 
@@ -31,13 +30,12 @@ namespace umdsst {
     // ---------------------------------------------------
     typedef umdsst::Covariance          Covariance;
     typedef umdsst::Geometry            Geometry;
-    typedef umdsst::GetValues           GetValues;
     typedef umdsst::Increment           Increment;
-    typedef umdsst::LinearGetValues     LinearGetValues;
     typedef umdsst::ModelAuxControl     ModelAuxControl;
     typedef umdsst::ModelAuxCovariance  ModelAuxCovariance;
     typedef umdsst::ModelAuxIncrement   ModelAuxIncrement;
     typedef umdsst::State               State;
+    typedef umdsst::VariableChange      VariableChange;
   };
 }  // namespace umdsst
 

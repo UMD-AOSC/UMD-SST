@@ -17,6 +17,7 @@ state:
   kelvin: true
 
 observations:
+  observers:
   - obs space:
       name: SST
       obsdatain: {obsfile: ./Data/obs_sst.nc}

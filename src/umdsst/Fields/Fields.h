@@ -24,10 +24,6 @@ namespace umdsst {
   class State;
 }
 
-namespace atlas {
-  class FieldSet;
-}
-
 // ----------------------------------------------------------------------------
 
 namespace umdsst {
@@ -63,18 +59,18 @@ namespace umdsst {
     void deserialize(const std::vector<double> &, size_t &) override {}
 
     // other accessors
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const;
-    std::shared_ptr<const Geometry> geometry() const;
+    // std::shared_ptr<atlas::FieldSet> atlasFieldSet() const;
+    // std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
-    // Ligang: 20210111, adjust for JEDI rep updates
-    void setAtlas(atlas::FieldSet *) const;
-    void toAtlas(atlas::FieldSet *) const;
-    void fromAtlas(atlas::FieldSet *);
+    // atlas interfaces
+    void toFieldSet(atlas::FieldSet &) const;
+    void toFieldSetAD(const atlas::FieldSet &);
+    void fromFieldSet(const atlas::FieldSet &);
 
    protected:
-    std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
-    std::shared_ptr<const Geometry> geom_;
+    //std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
+    const Geometry & geom_;
     const double missing_;
     util::DateTime time_;
     oops::Variables vars_;
