@@ -13,6 +13,7 @@
 #include "umdsst/Covariance/Covariance.h"
 #include "umdsst/Geometry/Geometry.h"
 #include "umdsst/Increment/Increment.h"
+#include "umdsst/LinearVariableChange/LinearVariableChange.h"
 #include "umdsst/ModelAux/ModelAuxControl.h"
 #include "umdsst/ModelAux/ModelAuxCovariance.h"
 #include "umdsst/ModelAux/ModelAuxIncrement.h"
@@ -28,14 +29,15 @@ namespace umdsst {
 
     // Interfaces that umdsst has to implement
     // ---------------------------------------------------
-    typedef umdsst::Covariance          Covariance;
-    typedef umdsst::Geometry            Geometry;
-    typedef umdsst::Increment           Increment;
-    typedef umdsst::ModelAuxControl     ModelAuxControl;
-    typedef umdsst::ModelAuxCovariance  ModelAuxCovariance;
-    typedef umdsst::ModelAuxIncrement   ModelAuxIncrement;
-    typedef umdsst::State               State;
-    typedef umdsst::VariableChange      VariableChange;
+    typedef umdsst::Covariance           Covariance;
+    typedef umdsst::Geometry             Geometry;
+    typedef umdsst::Increment            Increment;
+    typedef umdsst::LinearVariableChange LinearVariableChange;
+    typedef umdsst::ModelAuxControl      ModelAuxControl;
+    typedef umdsst::ModelAuxCovariance   ModelAuxCovariance;
+    typedef umdsst::ModelAuxIncrement    ModelAuxIncrement;
+    typedef umdsst::State                State;
+    typedef umdsst::VariableChange       VariableChange;
   };
 }  // namespace umdsst
 

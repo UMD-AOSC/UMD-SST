@@ -39,8 +39,8 @@ namespace umdsst {
 
     // constructors/destructors
     Covariance(const Geometry &, const oops::Variables &,
-                    const eckit::Configuration &,
-                    const State &, const State &);
+               const eckit::Configuration &,
+               const State &, const State &);
     ~Covariance();
 
     // math routines

@@ -181,11 +181,14 @@ void Fields::read(const eckit::Configuration & conf) {
     time = static_cast<int>(file.getDim("time").getSize());
     lon  = static_cast<int>(file.getDim("lon").getSize());
     lat  = static_cast<int>(file.getDim("lat").getSize());
-    if (time != 1 ||
-        lat != static_cast<int>(fspace.grid().ny()) ||
-        lon != static_cast<int>((atlas::RegularLonLatGrid&)(fspace.grid()).nx()) ) {
-      util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
+    {
+      // sanity check
+      int ny = static_cast<int>(fspace.grid().ny());
+      int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
+      if (time != 1 || lat != ny || lon != nx) {
+        util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
         __FILE__, __LINE__);
+      }
     }
 
     // get sst data
@@ -242,97 +245,93 @@ void Fields::read(const eckit::Configuration & conf) {
 
 // ----------------------------------------------------------------------------
 
-  void Fields::write(const eckit::Configuration & conf) const {
-    // gather from the PEs
-    atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
-        atlas::option::levels(1) |
-        atlas::option::global());
-    geom_->atlasFunctionSpace()->gather(
-      atlasFieldSet_->field("sea_surface_temperature"), globalSst);
+void Fields::write(const eckit::Configuration & conf) const {
+  const atlas::functionspace::StructuredColumns & fspace =
+    static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
 
-    // The following code block should execute on the root PE only
-    // Ligang: How do you do the above? Use the following if statement.
-    if ( globalSst.size() != 0 ) {
-      int lat, lon, time = 1;
-      std::string filename;
+  // gather from the PEs
+  atlas::Field globalSst = fspace.createField<double>(
+    atlas::option::levels(1) |
+    atlas::option::global());
+  fspace.gather(atlasFieldSet_.field("sea_surface_temperature"), globalSst);
 
-      // Ligang: debug, check conf
-//    oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
+  // The following code block should execute on the root PE only
+  if ( globalSst.size() != 0 ) {
+    int lat, lon, time = 1;
+    std::string filename;
 
-      // get filename
-      if (!conf.get("filename", filename)) {
+     oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
+
+    // get filename
+    if (!conf.get("filename", filename)) {
         util::abor1_cpp("Fields::write(), Get filename failed.",
                         __FILE__, __LINE__);
-      } else {
-        oops::Log::info() << "Fields::write(), filename=" << filename
-                          << std::endl;
-      }
-
-      // create netCDF file
-      netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
-      if (file.isNull())
-        util::abor1_cpp("Fields::write(), Create netCDF file failed.",
-                        __FILE__, __LINE__);
-
-      // define dims
-      lat = geom_->atlasFunctionSpace()->grid().ny();
-      lon = ((atlas::RegularLonLatGrid)
-             (geom_->atlasFunctionSpace()->grid())).nx();
-
-      // unlimited dim if without size parameter, then it'll be 0,
-      // what about the size?
-      netCDF::NcDim timeDim = file.addDim("time", 1);
-      netCDF::NcDim latDim  = file.addDim("lat" , lat);
-      netCDF::NcDim lonDim  = file.addDim("lon" , lon);
-      if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
-        util::abor1_cpp("Fields::write(), Define dims failed.",
-                        __FILE__, __LINE__);
-
-      std::vector<netCDF::NcDim> dims;
-      dims.push_back(timeDim);
-      dims.push_back(latDim);
-      dims.push_back(lonDim);
-
-      // Lignag: define coordinate vars "lat" and "lon"
-      // Ligang: define units atts for coordinate vars
-
-      // inside UMDSSTv3/JEDI, use double, read/write use float
-      // to make it consistent with the netCDF files.
-      netCDF::NcVar sstVar = file.addVar(std::string("sst"),
-                                        netCDF::ncFloat, dims);
-
-      // define units atts for data vars
-      const float fillvalue = -32768.0;
-      sstVar.putAtt("units", "K");
-      sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
-      sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
-
-      // write data to the file
-      auto fd = make_view<double, 2>(globalSst);
-      float sstData[time][lat][lon];
-      bool isKelvin = conf.getBool("kelvin", false);
-      int idx = 0;
-      for (int j = lat-1; j >= 0; j--)
-        for (int i = 0; i < lon; i++) {
-          if (fd(idx, 0) == missing_) {
-            sstData[0][j][i] = fillvalue;
-          } else {
-            // doulbe to float, also convert JEDI Celsius to Kelvin, in the
-            // future it should be able to handle both Kelvin and Celsius.
-            if (isKelvin)
-              sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
-            else
-              sstData[0][j][i] = static_cast<float>(fd(idx, 0));
-          }
-          idx++;
-        }
-
-      sstVar.putVar(sstData);
-
-      oops::Log::info() << "Fields::write(), Successfully write data to file!"
+    } else {
+      oops::Log::info() << "Fields::write(), filename=" << filename
                         << std::endl;
     }
+
+    // create netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
+    if (file.isNull())
+      util::abor1_cpp("Fields::write(), Create netCDF file failed.",
+                      __FILE__, __LINE__);
+
+    // define dims
+    lat = fspace.grid().ny();
+    lon = ((atlas::RegularLonLatGrid)(fspace.grid())).nx();
+
+    // unlimited dim if without size parameter, then it'll be 0,
+    // what about the size?
+    netCDF::NcDim timeDim = file.addDim("time", 1);
+    netCDF::NcDim latDim  = file.addDim("lat" , lat);
+    netCDF::NcDim lonDim  = file.addDim("lon" , lon);
+    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
+      util::abor1_cpp("Fields::write(), Define dims failed.",
+                      __FILE__, __LINE__);
+
+    std::vector<netCDF::NcDim> dims;
+    dims.push_back(timeDim);
+    dims.push_back(latDim);
+    dims.push_back(lonDim);
+
+    // inside UMDSSTv3/JEDI, use double, read/write use float
+    // to make it consistent with the netCDF files.
+    netCDF::NcVar sstVar = file.addVar(std::string("sst"),
+                                      netCDF::ncFloat, dims);
+
+    // define units atts for data vars
+    const float fillvalue = -32768.0;
+    sstVar.putAtt("units", "K");
+    sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
+    sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
+
+    // write data to the file
+    auto fd = atlas::array::make_view<double, 2>(globalSst);
+    float sstData[time][lat][lon];
+    bool isKelvin = conf.getBool("kelvin", false);
+    int idx = 0;
+    for (int j = lat-1; j >= 0; j--)
+      for (int i = 0; i < lon; i++) {
+        if (fd(idx, 0) == missing_) {
+          sstData[0][j][i] = fillvalue;
+        } else {
+          // doulbe to float, also convert JEDI Celsius to Kelvin, in the
+          // future it should be able to handle both Kelvin and Celsius.
+          if (isKelvin)
+            sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
+          else
+            sstData[0][j][i] = static_cast<float>(fd(idx, 0));
+        }
+        idx++;
+      }
+
+    sstVar.putVar(sstData);
+
+    oops::Log::info() << "Fields::write(), Successfully write data to file!"
+                      << std::endl;
   }
+}
 
 // ----------------------------------------------------------------------------
 

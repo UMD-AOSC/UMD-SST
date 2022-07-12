@@ -29,46 +29,53 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  Geometry::Geometry(const eckit::Configuration & conf,
-                     const eckit::mpi::Comm & comm) : comm_(comm) {
-    atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
-    atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
+Geometry::Geometry(const eckit::Configuration & conf,
+                    const eckit::mpi::Comm & comm)
+    : comm_(comm) {
 
-    atlasFunctionSpace_.reset(
-      new atlas::functionspace::StructuredColumns(atlasRllGrid,
-      atlas::option::halo(0)));
+  // create grid from configuration
+  atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
+  atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
+  functionSpace_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
+                    atlas::option::halo(0));
+  functionSpaceIncHalo_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
+                          atlas::option::halo(0));
+  // TODO put the halo back. Until then, this will only work on a single PE
 
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
-
-    if (conf.has("landmask.filename")) {
-      oops::Log::debug() << "Geometry::Geometry(), before loading landmask."
-                        << std::endl;
-      loadLandMask(conf);
-
-      oops::Log::debug() << "Geometry::Geometry(), after loading landmask."
-                        << std::endl;
-    }
-
-    // add Field area
-    // Ligang: From Travis, Temporary approximation solution, for a global
-    // regular latlon grid, need to change if involved with other types of grid.
-    double dx = 2. * M_PI * atlas::util::DatumIFS::radius()
-        / atlasFunctionSpace()->grid().nxmax();
-    auto lonlat_data = make_view<double, 2>(atlasFunctionSpace_->lonlat());
-    atlas::Field area = atlasFunctionSpace_->createField<double>(
-        atlas::option::levels(1) | atlas::option::name("area"));
-    auto area_data = make_view<double, 2>(area);
-    for (int i=0; i < atlasFunctionSpace_->size(); i++) {
-      area_data(i, 0) = dx*dx*cos(lonlat_data(i, 1)*M_PI/180.);
-    }
-    atlasFieldSet_->add(area);
-
-    // add field for rossby radius
-    if (conf.has("rossby radius file")) {
-      readRossbyRadius(conf.getString("rossby radius file"));
-    }
+  // load landmask
+  if (conf.has("landmask.filename")) {
+    loadLandMask(conf);
   }
+
+  // calulate grid area
+  // Temporary approximation solution, for a global
+  // regular latlon grid, need to change if involved with other types of grid.
+  const atlas::functionspace::StructuredColumns & fspace =
+    static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
+  double dx = 2. * M_PI * atlas::util::DatumIFS::radius() / fspace.grid().nxmax();
+  auto lonlat_data = atlas::array::make_view<double, 2>(functionSpace().lonlat());
+  atlas::Field area = functionSpace().createField<double>(
+      atlas::option::levels(1) | atlas::option::name("area"));
+  auto area_data = atlas::array::make_view<double, 2>(area);
+  for (int i=0; i < functionSpace().size(); i++) {
+    area_data(i, 0) = dx*dx*cos(lonlat_data(i, 1)*M_PI/180.);
+  }
+  extraFields_.add(area);
+
+  // vertical unit
+  atlas::Field fld = fspace.createField<double>(
+    atlas::option::levels(1) | atlas::option::name("vunit"));
+  auto fld_data = atlas::array::make_view<double, 2>(fld);
+  for (int i=0; i < functionSpace().size(); i++) {
+    fld_data(i, 0) = 1.0;
+  }
+  extraFields_.add(fld);
+
+  // add field for rossby radius
+  if (conf.has("rossby radius file")) {
+    readRossbyRadius(conf.getString("rossby radius file"));
+  }
+}
 
 // ----------------------------------------------------------------------------
 
@@ -179,28 +186,78 @@ void Geometry::print(std::ostream & os) const {
 
 // ----------------------------------------------------------------------------
 
-  void Geometry::readRossbyRadius(const std::string & filename) {
-    std::ifstream infile(filename);
-    std::vector<eckit::geometry::Point2> lonlat;
-    std::vector<double> vals;
-    double lat, lon, x, val;
+void Geometry::readRossbyRadius(const std::string & filename) {
+  std::ifstream infile(filename);
+  std::vector<eckit::geometry::Point2> lonlat;
+  std::vector<double> vals;
+  double lat, lon, x, val;
 
-    while (infile >> lat >> lon >> x >> val) {
-      lonlat.push_back(eckit::geometry::Point2(lon, lat));
-      vals.push_back(val*1.0e3);
-    }
-
-    atlas::Field field = interpToGeom(lonlat, vals);
-    field.rename("rossby_radius");
-    atlasFieldSet_->add(field);
+  while (infile >> lat >> lon >> x >> val) {
+    lonlat.push_back(eckit::geometry::Point2(lon, lat));
+    vals.push_back(val*1.0e3);
   }
+
+  atlas::Field field = interpToGeom(lonlat, vals);
+  field.rename("rossby_radius");
+  extraFields_->add(field);
+}
 
 // ----------------------------------------------------------------------------
 
-  atlas::Field Geometry::interpToGeom(
-    const std::vector<eckit::geometry::Point2> & srcLonLat,
-    const std::vector<double> & srcVal) const
-  {
+atlas::Field Geometry::interpToGeom(
+  const std::vector<eckit::geometry::Point2> & srcLonLat,
+  const std::vector<double> & srcVal) const
+{
+  // TODO replace this with atlas interpolation
+  // Interpolate the values from the given lat/lons onto the grid that is
+  // represented by this geometry. Note that this assumes each PE is
+  // presenting an identical copy of srcLonLat and srcVal.
+  struct TreeTrait {
+    typedef eckit::geometry::Point3 Point;
+    typedef double                  Payload;
+  };
+  typedef eckit::KDTreeMemory<TreeTrait> KDTree;
+  const int maxSearchPoints = 4;
+
+  // Create a KD tree for fast lookup
+  std::vector<typename KDTree::Value> srcPoints;
+  for (int i = 0; i < srcVal.size(); i++) {
+    KDTree::PointType xyz;
+    atlas::util::Earth::convertSphericalToCartesian(srcLonLat[i], xyz);
+    srcPoints.push_back(KDTree::Value(xyz, srcVal[i]) );
+  }
+  KDTree kd;
+  kd.build(srcPoints.begin(), srcPoints.end());
+
+  // Interpolate (inverse distance weighted)
+  atlas::Field dstField = functionSpace().createField<double>(
+    atlas::option::levels(1));
+  auto dstView = atlas::array::make_view<double, 2>(dstField);
+  auto dstLonLat = atlas::array::make_view<double, 2>(functionSpace().lonlat());
+  for (int i=0; i < functionSpace().size(); i++) {
+    eckit::geometry::Point2 dstPoint({dstLonLat(i, 0), dstLonLat(i, 1)});
+    eckit::geometry::Point3 dstPoint3D;
+    atlas::util::Earth::convertSphericalToCartesian(dstPoint, dstPoint3D);
+    auto points = kd.kNearestNeighbours(dstPoint3D, maxSearchPoints);
+    double sumDist = 0.0;
+    double sumDistVal = 0.0;
+    for ( int n = 0; n < points.size(); n++ ) {
+      if ( points[n].distance() < 1.0e-6 ) {
+        sumDist = 1.0;
+        sumDistVal = points[n].payload();
+        break;
+      }
+      double w = 1.0 / (points[n].distance()*points[n].distance());
+      sumDist += w;
+      sumDistVal += w*points[n].payload();
+    }
+
+    dstView(i, 0) = sumDistVal / sumDist;
+  }
+
+  return dstField;
+}
+
 // ----------------------------------------------------------------------------
 void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
                       const bool halo) const {
