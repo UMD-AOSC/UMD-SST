@@ -29,47 +29,45 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  Fields::Fields(const Geometry & geom, const oops::Variables & vars,
-                 const util::DateTime & vt)
-    : geom_(new Geometry(geom)), missing_(util::missingValue(this->missing_)),
-      time_(vt), vars_(vars) {
-    // the constructor that gets called by everything (all State
-    //  and Increment constructors ultimately end up here)
+Fields::Fields(const Geometry & geom, const oops::Variables & vars,
+                const util::DateTime & vt)
+  : geom_(geom), missing_(util::missingValue(this->missing_)),
+    time_(vt), vars_(vars) {
+  // the constructor that gets called by everything (all State
+  //  and Increment constructors ultimately end up here)
 
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int v = 0; v < vars_.size(); v++) {
-      std::string var = vars_[v];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         atlas::option::levels(1) |
-                         atlas::option::name(var));
-      auto fd = make_view<double, 2>(fld);
-      fd.assign(0.0);
-
-      atlasFieldSet_->add(fld);
-    }
+  for (int v = 0; v < vars_.size(); v++) {
+    atlas::Field fld = geom_.functionSpace()->createField<double>(
+                        atlas::option::levels(1) |
+                        atlas::option::name(vars_[v]));
+    auto fd = make_view<double, 2>(fld);
+    fd.assign(0.0);
+    atlasFieldSet_->add(fld);
   }
+}
 
 // ----------------------------------------------------------------------------
 
-  Fields::Fields(const Fields & other)
-    : Fields(*other.geom_, other.vars_, other.time_) {
-    // copy data from object other
-    *this = other;
-  }
+Fields::Fields(const Fields & other)
+  : Fields(other.geom_, other.vars_, other.time_) {
+  // copy data from object other
+  *this = other;
+}
 
 // ----------------------------------------------------------------------------
-  Fields & Fields::operator =(const Fields & other) {
-    const int size = geom_->atlasFunctionSpace()->size();
 
-    for (int v = 0; v < vars_.size(); v++) {
-      std::string name = vars_[v];
-      auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
-      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
-      for (int j = 0; j < size; j++)
-        fd(j, 0) = fd_other(j, 0);
-    }
-    return *this;
+Fields & Fields::operator =(const Fields & other) {
+  const int size = geom_.functionSpace().size();
+
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
+    for (int j = 0; j < size; j++)
+      fd(j, 0) = fd_other(j, 0);
   }
+  return *this;
+}
 
 // ----------------------------------------------------------------------------
 
@@ -93,151 +91,149 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  void Fields::accumul(const double &zz, const Fields &rhs) {
-    const size_t size = geom_->atlasFunctionSpace()->size();
+void Fields::accumul(const double &zz, const Fields &rhs) {
+  const size_t size = geom_.functionSpace().size();
 
-    for (int v = 0; v < vars_.size(); v++) {
-      std::string name = vars_[v];
-      auto fd = make_view<double, 2>(atlasFieldSet_->field(name));
-      auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(name));
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(name));
 
-      for (size_t i = 0; i < size; i++) {
-        if (fd(i, 0) == missing_ || fd_rhs(i, 0) == missing_)
-          fd(i, 0) = missing_;
-        else
-          fd(i, 0) +=  zz*fd_rhs(i, 0);
+    for (size_t i = 0; i < size; i++) {
+      if (fd(i, 0) == missing_ || fd_rhs(i, 0) == missing_)
+        fd(i, 0) = missing_;
+      else
+        fd(i, 0) +=  zz*fd_rhs(i, 0);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+
+double Fields::norm() const {
+  const int size = geom_.functionSpace().size();
+  int nValid = 0;
+  double norm = 0.0, s = 0.0;
+
+  for (int v = 0; v < vars_.size(); v++) {
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+
+    for (int i = 0; i < size; i++) {
+      if (fd(i, 0) != missing_) {
+        nValid += 1;
+        s += fd(i, 0)*fd(i, 0);
       }
     }
   }
 
+  // sum results across PEs
+  oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
+  oops::mpi::world().allReduceInPlace(s, eckit::mpi::Operation::SUM);
+
+  if (nValid == 0)
+    norm = 0.0;
+  else
+    norm = sqrt(s/(1.0*nValid));
+
+  return norm;
+}
+
 // ----------------------------------------------------------------------------
 
-  double Fields::norm() const {
-    const int size = geom_->atlasFunctionSpace()->size();
-    int nValid = 0;
-    double norm = 0.0, s = 0.0;
-
-    for (int v = 0; v < vars_.size(); v++) {
-      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
-
-      for (int i = 0; i < size; i++) {
-        if (fd(i, 0) != missing_) {
-          nValid += 1;
-          s += fd(i, 0)*fd(i, 0);
-        }
-      }
-    }
-
-    // sum results across PEs
-    oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
-    oops::mpi::world().allReduceInPlace(s, eckit::mpi::Operation::SUM);
-
-    if (nValid == 0)
-      norm = 0.0;
-    else
-      norm = sqrt(s/(1.0*nValid));
-
-    return norm;
+void Fields::zero() {
+  const int size = geom_.functionSpace().size();
+  for (int v = 0; v < vars_.size(); v++) {
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+    fd.assign(0.0);
   }
+}
 
 // ----------------------------------------------------------------------------
 
-  void Fields::zero() {
-    const int size = geom_->atlasFunctionSpace()->size();
-    for (int v = 0; v < vars_.size(); v++) {
-      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
-      fd.assign(0.0);
-    }
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Fields::read(const eckit::Configuration & conf) {
+void Fields::read(const eckit::Configuration & conf) {
     // create a global field valid on the root PE
-    // Ligang: root PE by atlas::option::global() to specify?
-    atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
-                         atlas::option::levels(1) |
-                         atlas::option::global());
+  atlas::Field globalSst = geom_.functionSpace().createField<double>(
+                       atlas::option::levels(1) |
+                       atlas::option::global());
 
-    // following code block should execute on the root PE only
-    // Ligang: How do you do to decide which PEs to run with Atlas?
-    // Check the above Fields::norm() which sums results across PEs.
-    if ( globalSst.size() != 0 ) {
-      int time = 0, lon = 0, lat = 0;
-      std::string filename;
+  // following code block should execute on the root PE only
+  if ( globalSst.size() != 0 ) {
+    int time = 0, lon = 0, lat = 0;
+    std::string filename;
 
-      auto fd = make_view<double, 2>(globalSst);
+    auto fd = make_view<double, 2>(globalSst);
 
-      // get filename
-      if (!conf.get("filename", filename))
-        util::abor1_cpp("Fields::read(), Get filename failed.",
-          __FILE__, __LINE__);
+    // get filename
+    if (!conf.get("filename", filename))
+      util::abor1_cpp("Fields::read(), Get filename failed.",
+        __FILE__, __LINE__);
 
-      // open netCDF file
-      netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
-      if (file.isNull())
-        util::abor1_cpp("Fields::read(), Create netCDF file failed.",
-          __FILE__, __LINE__);
+    // open netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
+    if (file.isNull())
+      util::abor1_cpp("Fields::read(), Create netCDF file failed.",
+        __FILE__, __LINE__);
 
-      // get file dimensions
-      time = static_cast<int>(file.getDim("time").getSize());
-      lon  = static_cast<int>(file.getDim("lon").getSize());
-      lat  = static_cast<int>(file.getDim("lat").getSize());
-      if (time != 1 ||
-          lat != static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()) ||
-          lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
-                (geom_->atlasFunctionSpace()->grid()))).nx()) ) {
-        util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
-          __FILE__, __LINE__);
-      }
+    // get file dimensions
+    time = static_cast<int>(file.getDim("time").getSize());
+    lon  = static_cast<int>(file.getDim("lon").getSize());
+    lat  = static_cast<int>(file.getDim("lat").getSize());
+    // if (time != 1 ||
+    //     lat != static_cast<int>(geom_.functionSpace().grid().ny()) ||
+    //     lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
+    //           (geom_.functionSpace().grid()))).nx()) ) {
+    //   util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
+    //     __FILE__, __LINE__);
+    // }
 
-      // get sst data
-      netCDF::NcVar sstVar;
-      sstVar = file.getVar("sst");
-      if (sstVar.isNull())
-        util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
-      float  sstData[lat][lon];
-      sstVar.getVar(sstData);  // if used double, read-in data would be wrong.
+    // get sst data
+    netCDF::NcVar sstVar;
+    sstVar = file.getVar("sst");
+    if (sstVar.isNull())
+      util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
+    float  sstData[lat][lon];
+    sstVar.getVar(sstData);  // if used double, read-in data would be wrong.
 
-      // mask missing values
-      const double epsilon = 1.0e-6;
-      const double missing_nc = -32768.0;
-      bool isKelvin = conf.getBool("kelvin", false);
-      for (int j = 0; j < lat; j++)
-        for (int i = 0; i < lon; i++)
-          if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
-            sstData[j][i] = missing_;
-            // TODO(someone) missing values that aren't a part of the landmask
-            // should be filled in instead
-          } else {
-            // Kelvin to Celsius which JEDI use internally, will check if the
-            // units is Kelvin or Celsius in the future
-            if (isKelvin)
-              sstData[j][i] -= 273.15;
-          }
+    // mask missing values
+    const double epsilon = 1.0e-6;
+    const double missing_nc = -32768.0;
+    bool isKelvin = conf.getBool("kelvin", false);
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++)
+        if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
+          sstData[j][i] = missing_;
+          // TODO(someone) missing values that aren't a part of the landmask
+          // should be filled in instead
+        } else {
+          // Kelvin to Celsius which JEDI use internally, will check if the
+          // units is Kelvin or Celsius in the future
+          if (isKelvin)
+            sstData[j][i] -= 273.15;
+        }
 
-      // float to double
-      int idx = 0;
-      for (int j = lat-1; j >= 0; j--)
-        for (int i = 0; i < lon; i++)
-          fd(idx++, 0) = static_cast<double>(sstData[j][i]);
-    }
-
-    // scatter to the PEs
-    geom_->atlasFunctionSpace()->scatter(
-      globalSst, atlasFieldSet_->field("sea_surface_temperature"));
-
-    // apply mask from read in landmask
-    if ( (*geom_->atlasFieldSet()).has_field("gmask") ) {
-       atlas::Field mask_field = (*geom_->atlasFieldSet())["gmask"];
-       auto mask = make_view<int, 2>(mask_field);
-       auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-       for (int i = 0; i < mask.size(); i++) {
-         if (mask(i, 0) == 0)
-           fd(i, 0) = missing_;
-       }
-     }
+    // float to double
+    int idx = 0;
+    for (int j = lat-1; j >= 0; j--)
+      for (int i = 0; i < lon; i++)
+        fd(idx++, 0) = static_cast<double>(sstData[j][i]);
   }
+
+  // scatter to the PEs
+  // TODO, dangerous, don't do this?
+  static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
+    globalSst, atlasFieldSet_->field("sea_surface_temperature"));
+
+  // apply mask from read in landmask
+  if ( geom_.extraFields().has_field("gmask") ) {
+    atlas::Field mask_field = geom_.extraFields()["gmask"];
+    auto mask = make_view<int, 2>(mask_field);
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    for (int i = 0; i < mask.size(); i++) {
+      if (mask(i, 0) == 0)
+        fd(i, 0) = missing_;
+    }
+  }
+}
 
 // ----------------------------------------------------------------------------
 
@@ -396,41 +392,41 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  void Fields::print(std::ostream & os) const {
-    const int size = geom_->atlasFunctionSpace()->size();
-    for (int v = 0; v < vars_.size(); v++) {
-      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
-      double mean = 0.0, sum = 0.0,
-            min = std::numeric_limits<double>::max(),
-            max = std::numeric_limits<double>::min();
-      int nValid = 0;
+void Fields::print(std::ostream & os) const {
+  const int size = geom_.functionSpace().size();
+  for (int v = 0; v < vars_.size(); v++) {
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+    double mean = 0.0, sum = 0.0,
+          min = std::numeric_limits<double>::max(),
+          max = std::numeric_limits<double>::min();
+    int nValid = 0;
 
-      for (int i = 0; i < size; i++)
-        if (fd(i, 0) != missing_) {
-          if (fd(i, 0) < min) min = fd(i, 0);
-          if (fd(i, 0) > max) max = fd(i, 0);
+    for (int i = 0; i < size; i++)
+      if (fd(i, 0) != missing_) {
+        if (fd(i, 0) < min) min = fd(i, 0);
+        if (fd(i, 0) > max) max = fd(i, 0);
 
-          sum += fd(i, 0);
-          nValid++;
-        }
-
-      // gather results across PEs
-      oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
-      oops::mpi::world().allReduceInPlace(sum, eckit::mpi::Operation::SUM);
-      oops::mpi::world().allReduceInPlace(min, eckit::mpi::Operation::MIN);
-      oops::mpi::world().allReduceInPlace(max, eckit::mpi::Operation::MAX);
-
-      if (nValid == 0) {
-        mean = 0.0;
-        oops::Log::debug() << "Field::print(), nValid == 0!" << std::endl;
-      } else {
-        mean = sum / (1.0*nValid);
+        sum += fd(i, 0);
+        nValid++;
       }
 
-      os << "min = " << min << ", max = " << max << ", mean = " << mean
-        << std::endl;
+    // gather results across PEs
+    oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
+    oops::mpi::world().allReduceInPlace(sum, eckit::mpi::Operation::SUM);
+    oops::mpi::world().allReduceInPlace(min, eckit::mpi::Operation::MIN);
+    oops::mpi::world().allReduceInPlace(max, eckit::mpi::Operation::MAX);
+
+    if (nValid == 0) {
+      mean = 0.0;
+      oops::Log::debug() << "Field::print(), nValid == 0!" << std::endl;
+    } else {
+      mean = sum / (1.0*nValid);
     }
+
+    os << "min = " << min << ", max = " << max << ", mean = " << mean
+      << std::endl;
   }
+}
 // ----------------------------------------------------------------------------
 
 }  // namespace umdsst

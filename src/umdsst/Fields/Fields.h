@@ -69,7 +69,7 @@ namespace umdsst {
     void fromFieldSet(const atlas::FieldSet &);
 
    protected:
-    //std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
+    atlas::FieldSet atlasFieldSet_;
     const Geometry & geom_;
     const double missing_;
     util::DateTime time_;

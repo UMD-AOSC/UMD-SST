@@ -18,13 +18,15 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  State::State(const Geometry & geom, const eckit::Configuration & conf)
-    : Fields(geom, oops::Variables(conf, "state variables"),
-             util::DateTime(conf.getString("date"))) {
-    // check and read in data if it has filename
-    if (conf.has("filename"))
-      read(conf);
+State::State(const Geometry & geom, const eckit::Configuration & conf)
+  : Fields(geom, oops::Variables(conf, "state variables"),
+           util::DateTime(conf.getString("date"))) {
+
+  // check and read in data if it has filename
+  if (conf.has("filename")) {
+    read(conf);
   }
+}
 
 // ----------------------------------------------------------------------------
 

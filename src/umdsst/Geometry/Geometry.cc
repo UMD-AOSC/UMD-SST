@@ -21,10 +21,9 @@
 #include "atlas/functionspace.h"
 #include "atlas/util/Config.h"
 
+#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
-
-using atlas::array::make_view;
 
 namespace umdsst {
 
@@ -87,65 +86,67 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
-  Geometry::~Geometry() {}
+Geometry::~Geometry() {}
 
 // ----------------------------------------------------------------------------
 
-  void Geometry::loadLandMask(const eckit::Configuration &conf) {
-    // use an globalLandMask to read the data on root PE only.
-    atlas::Field globalLandMask = atlasFunctionSpace_->createField<int>(
-                                  atlas::option::levels(1) |
-                                  atlas::option::name("gmask") |
-                                  atlas::option::global());
-    auto fd = make_view<int, 2>(globalLandMask);
+void Geometry::loadLandMask(const eckit::Configuration &conf) {
 
-    // Ligang: read file only on the root PE.
-    if (globalLandMask.size() != 0) {
-      int lat = 0, lon = 0;
-      std::string filename;
+  // use an globalLandMask to read the data on root PE only.
+  atlas::Field globalLandMask = functionSpace().createField<int>(
+                                atlas::option::levels(1) |
+                                atlas::option::name("gmask") |
+                                atlas::option::global());
+  auto fd = atlas::array::make_view<int, 2>(globalLandMask);
 
-      if (!conf.get("landmask.filename", filename))
-        util::abor1_cpp("Geometry::loadLandMask(), Get filename failed.",
-          __FILE__, __LINE__);
-      else
-        oops::Log::info() << "In Geometry::loadLandMask(), filename = "
-                          << filename << std::endl;
+  // read file only on the root PE.
+  if (globalLandMask.size() != 0) {
+    int lat = 0, lon = 0;
+    std::string filename;
 
-      // Open netCDF file
-      netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
-      if (file.isNull())
-        util::abor1_cpp("Geometry::loadLandMask(), Create netCDF file failed.",
-          __FILE__, __LINE__);
+    if (!conf.get("landmask.filename", filename))
+      util::abor1_cpp("Geometry::loadLandMask(), Get filename failed.",
+        __FILE__, __LINE__);
+    else
+      oops::Log::info() << "In Geometry::loadLandMask(), filename = "
+                        << filename << std::endl;
 
-      // get file dimensions
-      lat = static_cast<int>(file.getDim("lat").getSize());
-      lon = static_cast<int>(file.getDim("lon").getSize());
+    // Open netCDF file
+    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
+    if (file.isNull())
+      util::abor1_cpp("Geometry::loadLandMask(), Create netCDF file failed.",
+        __FILE__, __LINE__);
 
-      // get landmask data
-      netCDF::NcVar varLandMask;
-      varLandMask = file.getVar("landmask");
-      if (varLandMask.isNull())
-        util::abor1_cpp("Get var landmask failed.", __FILE__, __LINE__);
+    // get file dimensions
+    lat = static_cast<int>(file.getDim("lat").getSize());
+    lon = static_cast<int>(file.getDim("lon").getSize());
 
-      int dataLandMask[lat][lon];
-      varLandMask.getVar(dataLandMask);
+    // get landmask data
+    netCDF::NcVar varLandMask;
+    varLandMask = file.getVar("landmask");
+    if (varLandMask.isNull())
+      util::abor1_cpp("Get var landmask failed.", __FILE__, __LINE__);
 
-      // TODO(someone) the netcdf lat dimension is likely inverted compared to
-      // the  atlas grid. This should be explicitly checked.
-      int idx = 0;
-      for (int j = lat-1; j >= 0; j--)
-        for (int i = 0; i < lon; i++)
-          fd(idx++, 0) = dataLandMask[j][i];
-    }
+    int dataLandMask[lat][lon];
+    varLandMask.getVar(dataLandMask);
 
-    atlas::Field fld = atlasFunctionSpace_->createField<int>(
-                       atlas::option::levels(1) |
-                       atlas::option::name("gmask"));
-    atlasFieldSet_->add(fld);
-
-    atlasFunctionSpace_->scatter(globalLandMask,
-                                 atlasFieldSet_->field("gmask"));
+    // TODO(someone) the netcdf lat dimension is likely inverted compared to
+    // the  atlas grid. This should be explicitly checked.
+    int idx = 0;
+    for (int j = lat-1; j >= 0; j--)
+      for (int i = 0; i < lon; i++)
+        fd(idx++, 0) = dataLandMask[j][i];
   }
+
+  // scatter to the PEs
+  atlas::Field fld = functionSpace().createField<int>(
+                     atlas::option::levels(1) |
+                     atlas::option::name("gmask"));
+  extraFields_->add(fld);
+  // TODO, dangerous, don't do this?
+  static_cast<atlas::functionspace::StructuredColumns>(functionSpace()).scatter(
+    globalLandMask, extraFields_->field("gmask"));
+}
 
 // ----------------------------------------------------------------------------
 
@@ -197,52 +198,39 @@ namespace umdsst {
     const std::vector<eckit::geometry::Point2> & srcLonLat,
     const std::vector<double> & srcVal) const
   {
-    // Interpolate the values from the given lat/lons onto the grid that is
-    // represented by this geometry. Note that this assumes each PE is
-    // presenting an identical copy of srcLonLat and srcVal.
-    struct TreeTrait {
-      typedef eckit::geometry::Point3 Point;
-      typedef double                  Payload;
-    };
-    typedef eckit::KDTreeMemory<TreeTrait> KDTree;
-    const int maxSearchPoints = 4;
+// ----------------------------------------------------------------------------
+void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
+                      const bool halo) const {
 
-    // Create a KD tree for fast lookup
-    std::vector<typename KDTree::Value> srcPoints;
-    for (int i = 0; i < srcVal.size(); i++) {
-      KDTree::PointType xyz;
-      atlas::util::Earth::convertSphericalToCartesian(srcLonLat[i], xyz);
-      srcPoints.push_back(KDTree::Value(xyz, srcVal[i]) );
-    }
-    KDTree kd;
-    kd.build(srcPoints.begin(), srcPoints.end());
-
-    // Interpolate (inverse distance weighted)
-    atlas::Field dstField = atlasFunctionSpace_->createField<double>(
-      atlas::option::levels(1));
-    auto dstView = make_view<double, 2>(dstField);
-    auto dstLonLat = make_view<double, 2>(atlasFunctionSpace_->lonlat());
-    for (int i=0; i < atlasFunctionSpace_->size(); i++) {
-      eckit::geometry::Point2 dstPoint({dstLonLat(i, 0), dstLonLat(i, 1)});
-      eckit::geometry::Point3 dstPoint3D;
-      atlas::util::Earth::convertSphericalToCartesian(dstPoint, dstPoint3D);
-      auto points = kd.kNearestNeighbours(dstPoint3D, maxSearchPoints);
-      double sumDist = 0.0;
-      double sumDistVal = 0.0;
-      for ( int n = 0; n < points.size(); n++ ) {
-        if ( points[n].distance() < 1.0e-6 ) {
-          sumDist = 1.0;
-          sumDistVal = points[n].payload();
-          break;
-        }
-        double w = 1.0 / (points[n].distance()*points[n].distance());
-        sumDist += w;
-        sumDistVal += w*points[n].payload();
-      }
-
-      dstView(i, 0) = sumDistVal / sumDist;
-    }
-
-    return dstField;
+  const atlas::functionspace::StructuredColumns* fspace;
+  if (halo) {
+    fspace = &functionSpaceIncHalo_;
+  } else {
+    fspace = &functionSpace_;
   }
+
+  auto lonlat = atlas::array::make_view<double,2>(fspace->lonlat());
+  auto ngrid = lonlat.shape<0>();
+  for (size_t i=0; i < ngrid; i++) {
+    // TODO don't do this, how should the halos work at the poles?
+    auto lat = lonlat(i, 1);
+    if (lat > 90) lat = 90;
+    if (lat < -90) lat = -90;
+    lats.push_back(lat);
+    lons.push_back(lonlat(i, 0));
+  }
+}
+
+// ----------------------------------------------------------------------------
+std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
+  std::vector<size_t> lvls;
+  for (size_t i; i < vars.size(); i++) {
+    // TODO get the actual number of levels
+    lvls.push_back(1);
+  }
+
+  return lvls;
+}
+
+// ----------------------------------------------------------------------------
 }  // namespace umdsst
