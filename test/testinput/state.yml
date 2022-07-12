@@ -9,7 +9,7 @@ geometry:
 
 
 state test:
-  norm file: 17.618557808088323
+  norm file: 17.618557808088571
   tolerance: 1e-6
   date: &date 1985-01-01T12:00:00Z
   statefile:

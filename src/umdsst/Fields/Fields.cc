@@ -233,6 +233,9 @@ void Fields::read(const eckit::Configuration & conf) {
         fd(i, 0) = missing_;
     }
   }
+
+  // done, do halo exchange
+  atlasFieldSet_.haloExchange();
 }
 
 // ----------------------------------------------------------------------------

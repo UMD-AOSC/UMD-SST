@@ -150,29 +150,32 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
 
 // ----------------------------------------------------------------------------
 
-  void Geometry::print(std::ostream & os) const {
-    int nx, ny;
-    ny = static_cast<int>(atlasFunctionSpace()->grid().ny());
-    nx = static_cast<int>(
-      ((atlas::RegularLonLatGrid&)(atlasFunctionSpace()->grid())).nx() );
+void Geometry::print(std::ostream & os) const {
+  const atlas::functionspace::StructuredColumns & fspace =
+    static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
 
-    os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
+  int ny = static_cast<int>(fspace.grid().ny());
+  int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
 
-    int nMaskedLand = 0, nUnmaskedOcean = 0,
-        nSize = atlasFunctionSpace_->size();
-    auto fd = make_view<int, 2>(atlasFieldSet_->field("gmask"));
-    for (int j = 0; j < nSize; j++) {
-      if (fd(j, 0) == 1)
-        nUnmaskedOcean += 1;
-      else if (fd(j, 0) == 0)
-        nMaskedLand += 1;
-      else
-        util::abor1_cpp("Geometry::print(), landmask neither 1 nor 0.",
-          __FILE__, __LINE__);
+  os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
+
+  size_t nMaskedLand = 0;
+  size_t nUnmaskedOcean = 0;
+  const int nSize = functionSpace().size();
+  auto fd = atlas::array::make_view<int, 2>(extraFields_->field("gmask"));
+  for (size_t j = 0; j < nSize; j++) {
+    if (fd(j, 0) == 1) {
+      nUnmaskedOcean += 1;
+    } else if (fd(j, 0) == 0) {
+      nMaskedLand += 1;
+    } else {
+      util::abor1_cpp("Geometry::print(), landmask neither 1 nor 0.",
+        __FILE__, __LINE__);
     }
-    os << "Geometry: # of unmasked ocean grid = " << nUnmaskedOcean
-       << ", # of masked land grid = " << nMaskedLand << std::endl;
   }
+  os << "Geometry: # of unmasked ocean grid = " << nUnmaskedOcean
+     << ", # of masked land grid = " << nMaskedLand << std::endl;
+}
 
 // ----------------------------------------------------------------------------
 

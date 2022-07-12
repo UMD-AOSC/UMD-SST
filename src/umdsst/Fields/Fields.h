@@ -64,9 +64,11 @@ namespace umdsst {
     const oops::Variables & variables() const { return vars_; }
 
     // atlas interfaces
-    void toFieldSet(atlas::FieldSet &) const;
+    void toFieldSet(atlas::FieldSet & fset) const {fset = atlasFieldSet_;}
     void toFieldSetAD(const atlas::FieldSet &);
     void fromFieldSet(const atlas::FieldSet &);
+
+    atlas::FieldSet & fieldSet() { return atlasFieldSet_;}
 
    protected:
     atlas::FieldSet atlasFieldSet_;
