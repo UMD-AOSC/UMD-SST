@@ -71,23 +71,23 @@ Fields & Fields::operator =(const Fields & other) {
 
 // ----------------------------------------------------------------------------
 
-  Fields & Fields::operator+=(const Fields &other) {
-    const int size = geom_->atlasFunctionSpace()->size();
+Fields & Fields::operator+=(const Fields &other) {
+  const int size = geom_.functionSpace().size();
 
-    for (int v = 0; v < vars_.size(); v++) {
-      std::string name = vars_[v];
-      auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
-      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
 
-      for (int j = 0; j < size; j++) {
-        if (fd(j, 0) == missing_ || fd_other(j, 0) == other.missing_)
-          fd(j, 0) = missing_;
-        else
-          fd(j, 0) += fd_other(j, 0);
-      }
+    for (int j = 0; j < size; j++) {
+      if (fd(j, 0) == missing_ || fd_other(j, 0) == other.missing_)
+        fd(j, 0) = missing_;
+      else
+        fd(j, 0) += fd_other(j, 0);
     }
-    return *this;
   }
+  return *this;
+}
 
 // ----------------------------------------------------------------------------
 
@@ -163,6 +163,9 @@ void Fields::read(const eckit::Configuration & conf) {
 
     auto fd = make_view<double, 2>(globalSst);
 
+    const atlas::functionspace::StructuredColumns & fspace =
+      static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
+
     // get filename
     if (!conf.get("filename", filename))
       util::abor1_cpp("Fields::read(), Get filename failed.",
@@ -178,13 +181,12 @@ void Fields::read(const eckit::Configuration & conf) {
     time = static_cast<int>(file.getDim("time").getSize());
     lon  = static_cast<int>(file.getDim("lon").getSize());
     lat  = static_cast<int>(file.getDim("lat").getSize());
-    // if (time != 1 ||
-    //     lat != static_cast<int>(geom_.functionSpace().grid().ny()) ||
-    //     lon != static_cast<int>((((atlas::RegularLonLatGrid&)  // LC: no &?
-    //           (geom_.functionSpace().grid()))).nx()) ) {
-    //   util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
-    //     __FILE__, __LINE__);
-    // }
+    if (time != 1 ||
+        lat != static_cast<int>(fspace.grid().ny()) ||
+        lon != static_cast<int>((atlas::RegularLonLatGrid&)(fspace.grid()).nx()) ) {
+      util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
+        __FILE__, __LINE__);
+    }
 
     // get sst data
     netCDF::NcVar sstVar;

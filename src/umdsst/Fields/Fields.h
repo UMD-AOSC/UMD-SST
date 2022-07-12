@@ -69,6 +69,7 @@ namespace umdsst {
     void fromFieldSet(const atlas::FieldSet &);
 
     atlas::FieldSet & fieldSet() { return atlasFieldSet_;}
+    const atlas::FieldSet & fieldSet() const { return atlasFieldSet_;}
 
    protected:
     atlas::FieldSet atlasFieldSet_;

@@ -45,9 +45,8 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other, const bool copy)
-    : Fields(*other.geom_, other.vars_, other.time_) {
-    if (copy)
-      *this = other;
+    : Fields(other.geom_, other.vars_, other.time_) {
+    if (copy) { *this = other; }
   }
 
 // ----------------------------------------------------------------------------
@@ -72,11 +71,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator -=(const Increment &other) {
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 2>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 2>(atlasFieldSet_.field(0));
+      auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(0));
       for (int j = 0; j < size; j++)
         fd(j, 0) -= fd_other(j, 0);
     }
@@ -95,7 +94,7 @@ namespace umdsst {
 
   Increment & Increment::operator *=(const double &zz) {
     auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
 
     for (int j = 0; j < size; j++)
       fd(j, 0) *= zz;
@@ -116,11 +115,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::diff(const State & x1, const State & x2) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_x1 = make_view<double, 2>(x1.atlasFieldSet()->field(0));
-    auto fd_x2 = make_view<double, 2>(x2.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_x1 = make_view<double, 2>(x1.fieldSet().field(0));
+    auto fd_x2 = make_view<double, 2>(x2.fieldSet().field(0));
 
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
 
     for (int i = 0; i < size; i++)
       fd(i, 0) = fd_x1(i, 0) - fd_x2(i, 0);
@@ -129,10 +128,10 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   double Increment::dot_product_with(const Increment &other) const {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_other = make_view<double, 2>(other.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(0));
 
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
     double dp = 0.0;
 
     // Ligang: will be updated with missing_value process!
@@ -148,15 +147,15 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::ones() {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     fd.assign(1.0);
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::random() {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    const int size = geom_->atlasFunctionSpace()->size();
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    const int size = geom_.functionSpace().size();
 
     util::NormalDistribution<double> x(size, 0, 1.0, 1);
 
@@ -167,10 +166,10 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::schur_product_with(const Increment &rhs ) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(0));
 
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
     for (int i = 0; i < size; i++)
       fd(i, 0) *= fd_rhs(i, 0);
   }
@@ -178,10 +177,10 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::schur_product_with_inv(const Increment &rhs ) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(0));
 
-    const int size = geom_->atlasFunctionSpace()->size();
+    const int size = geom_.functionSpace().size();
     for (int i = 0; i < size; i++)
       fd(i, 0) *= 1.0 / fd_rhs(i, 0);
   }
@@ -211,20 +210,20 @@ namespace umdsst {
     ASSERT(ixdir.size() > 0 && ixdir.size() == iydir.size());
     const int dir_size = ixdir.size();
 
-    // Ligang: This is where we need the field_data to be 2D;
-    // How do we make it 2D? should be related to when create the field.
-    const int ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
-    const int nx = static_cast<int>(
-      ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
+    // This is where we need the field_data to be 2D
+    const atlas::functionspace::StructuredColumns & fspace =
+      static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
+    const int ny = static_cast<int>(fspace.grid().ny());
+    const int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx());
     for (int i = 0; i < dir_size; i++)
       ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
-    atlas::Field gi = geom_->atlasFunctionSpace()->global_index();
-    atlas::Field ri = geom_->atlasFunctionSpace()->remote_index();
+    atlas::Field gi = fspace.global_index();
+    atlas::Field ri = fspace.remote_index();
     auto fd_gi = make_view<int64_t, 1>(gi);
     auto fd_ri = make_view<int, 1>(ri);
 
-    const int sz = geom_->atlasFunctionSpace()->size();
+    const int sz = fspace.size();
 
     auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     for (int i = 0; i < dir_size; i++) {
