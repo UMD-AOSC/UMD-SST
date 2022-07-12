@@ -35,6 +35,7 @@ class LinearVariableChangeParameters : public oops::LinearVariableChangeParamete
 // -----------------------------------------------------------------------------
 
 class LinearVariableChange : public util::Printable {
+  // NOTE: this is an empty class that doesn't do anything
  public:
   static const std::string classname() {return "umdsst::LinearVariableChange";}
   typedef LinearVariableChangeParameters Parameters_;
@@ -42,12 +43,12 @@ class LinearVariableChange : public util::Printable {
   explicit LinearVariableChange(const Geometry &, const Parameters_ &) {};
   ~LinearVariableChange() {};
 
-  void setTrajectory(const State &, const State &) {}
+  void changeVarTraj(const State &, const oops::Variables &) {}
 
-  void multiply(Increment &, const oops::Variables &) const {}
-  void multiplyInverse(Increment &, const oops::Variables &) const {}
-  void multiplyAD(Increment &, const oops::Variables &) const {}
-  void multiplyInverseAD(Increment &, const oops::Variables &) const {}
+  void changeVarTL(Increment &, const oops::Variables &) const {}
+  void changeVarInverseTL(Increment &, const oops::Variables &) const {}
+  void changeVarAD(Increment &, const oops::Variables &) const {}
+  void changeVarInverseAD(Increment &, const oops::Variables &) const {}
 
  private:
   void print(std::ostream &) const override { ASSERT(1==2); }

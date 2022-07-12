@@ -49,15 +49,17 @@ namespace umdsst {
     gridConf.set("prefix", prefix + "_00");
     gridConf.set("variables", vars.variables());
     gridConf.set("nv", vars.size());
-    gridConf.set("nl", 1);
+    gridConf.set("nl0", 1);
 
     oops::Log::info() << "Configuration: " << bumpConf << std::endl;
     oops::Log::info() << "Grid " << 0 << ": " << gridConf << std::endl;
 
+    atlas::FieldSet universe_rad = atlas::FieldSet();
+
     saber::bump_create_f90(keyBump_, &geom.getComm(),
-                    geom.atlasFunctionSpace()->get(),
-                    geom.atlasFieldSet()->get(),
-                    bumpConf, gridConf);
+                    geom.functionSpace().get(),
+                    geom.extraFields().get(),
+                    bumpConf, gridConf, universe_rad.get());
 
     // pass user generated fields to BUMP
     // NOTE: assuming only 1 state variable
@@ -65,7 +67,7 @@ namespace umdsst {
     assert(vars.size() == 1);
     std::string param_name;
     atlas::FieldSet param_fieldSet;
-    atlas::Field param_field = geom.atlasFunctionSpace()->createField<double>(
+    atlas::Field param_field = geom.functionSpace().createField<double>(
       atlas::option::levels(1) | atlas::option::name(vars[0]));
     param_fieldSet.add(param_field);
     auto param_view = atlas::array::make_view<double, 2>(param_field);
@@ -88,9 +90,9 @@ namespace umdsst {
                                        std::numeric_limits<double>::max());
 
       auto rossbyRadius = atlas::array::make_view<double, 2>(
-        geom.atlasFieldSet()->field("rossby_radius"));
+        geom.extraFields().field("rossby_radius"));
       auto area = atlas::array::make_view<double, 2>(
-         geom.atlasFieldSet()->field("area"));
+         geom.extraFields().field("area"));
 
       param_view.assign(baseValue);
       for ( int i = 0; i < param_field.size(); i++ ) {
@@ -107,15 +109,15 @@ namespace umdsst {
         param_view(i, 0) *= 3.57;  // gaussian to GC factor
       }
 
-      param_name = "cor_rh";
+      param_name = "rh";
       saber::bump_set_parameter_f90(keyBump_, param_name.size(),
-                                    param_name.c_str(), param_fieldSet.get());
+                                    param_name.c_str(), 1, param_fieldSet.get());
 
       // vertical lengths (leave at 1.0, because we have no vertical)
-      param_name = "cor_rv";
+      param_name = "rv";
       param_view.assign(1.0);
       saber::bump_set_parameter_f90(keyBump_, param_name.size(),
-                                    param_name.c_str(), param_fieldSet.get());
+                                    param_name.c_str(), 1, param_fieldSet.get());
     }
 
     // Calculate static B and cleanup
@@ -145,7 +147,7 @@ namespace umdsst {
 
   void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
     dxout = dxin;
-    saber::bump_apply_nicas_f90(keyBump_, (*dxout.atlasFieldSet()).get());
+    saber::bump_apply_nicas_f90(keyBump_, dxout.fieldSet().get());
   }
 
 // ----------------------------------------------------------------------------
