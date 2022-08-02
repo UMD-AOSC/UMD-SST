@@ -23,34 +23,34 @@ VariableChange::VariableChange(const Parameters_ & params,
 // -----------------------------------------------------------------------------
 
 void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
+  State xx2(xx.geometry(), vars, xx.time());
 
   for ( int v = 0; v < vars.size(); v++ ) {
     std::string name = vars[v];
+    const int size = geom_.functionSpace().size();
+
+    auto dst = atlas::array::make_view<double, 2>(xx2.fieldSet().field(name));
 
     if ( xx.variables().has(name) ) {
       // no variable change required, already exists
-      // TODO check if interp_type is already defined?
-      xx.fieldSet().field(name).metadata().set("interp_type", "default");
+      auto src = atlas::array::make_view<double, 2>(xx.fieldSet().field(name));
+      for (int j=0; j < size; j++) dst(j, 0) = src(j, 0);
+
     } else if (name == "sea_area_fraction") {
       // convert integer land mask to a floating point field
-      atlas::Field fld = geom_.functionSpace().createField<double>(
-        atlas::option::levels(1) |
-        atlas::option::name("sea_area_fraction"));
-      fld.metadata().set("interp_type", "default");
-
-      auto dst = atlas::array::make_view<double, 2>(fld);
       auto src = atlas::array::make_view<int, 2>(
-        geom_.extraFields()->field("gmask"));
-      const int size = geom_.functionSpace().size();
-      for (int j=0; j < size; j++)
+        geom_.extraFields().field("gmask"));
+      for (int j=0; j < size; j++) {
         dst(j, 0) = static_cast<double>(src(j, 0));
-
-      xx.fieldSet().add(fld);
+      }
     } else {
       ASSERT(1==2);
     }
 
+    xx2.fieldSet().field(name).metadata().set("interp_type", "default");
   }
+
+  xx = xx2;
 }
 
 // -----------------------------------------------------------------------------

@@ -31,19 +31,11 @@ namespace umdsst {
 
 Fields::Fields(const Geometry & geom, const oops::Variables & vars,
                 const util::DateTime & vt)
-  : geom_(geom), missing_(util::missingValue(this->missing_)),
+  : atlasFieldSet_(), geom_(geom), missing_(util::missingValue(this->missing_)),
     time_(vt), vars_(vars) {
-  // the constructor that gets called by everything (all State
-  //  and Increment constructors ultimately end up here)
-
-  for (int v = 0; v < vars_.size(); v++) {
-    atlas::Field fld = geom_.functionSpace()->createField<double>(
-                        atlas::option::levels(1) |
-                        atlas::option::name(vars_[v]));
-    auto fd = make_view<double, 2>(fld);
-    fd.assign(0.0);
-    atlasFieldSet_->add(fld);
-  }
+  // the constructor that gets called by everything (all State and Increment
+  //  constructors ultimately end up here)
+  updateFields(vars);
 }
 
 // ----------------------------------------------------------------------------
@@ -56,13 +48,39 @@ Fields::Fields(const Fields & other)
 
 // ----------------------------------------------------------------------------
 
-Fields & Fields::operator =(const Fields & other) {
-  const int size = geom_.functionSpace().size();
+void Fields::updateFields(const oops::Variables & vars) {
+  atlas::FieldSet fset;
+  for (int v = 0; v < vars.size(); v++) {
+    if (atlasFieldSet_.has_field(vars[v])) {
+      // field already exists, copy over
+      fset.add(atlasFieldSet_.field(vars[v]));
+    } else {
+      // field does not exist, create
+      atlas::Field fld = geom_.functionSpace().createField<double>(
+                          atlas::option::levels(1) |
+                          atlas::option::name(vars[v]));
+      auto fd = make_view<double, 2>(fld);
+      fd.assign(0.0);
+      fset.add(fld);
+    }
+  }
+  atlasFieldSet_ = fset;
+  vars_ = vars;
+}
 
+// ----------------------------------------------------------------------------
+
+Fields & Fields::operator =(const Fields & other) {
+  time_ = other.time_;
+
+  updateFields(other.vars_);
+
+  const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
-    auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
+    auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
+
     for (int j = 0; j < size; j++)
       fd(j, 0) = fd_other(j, 0);
   }
@@ -73,9 +91,9 @@ Fields & Fields::operator =(const Fields & other) {
 
 Fields & Fields::operator+=(const Fields &other) {
   const int size = geom_.functionSpace().size();
-
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
+    ASSERT(other.atlasFieldSet_.has_field(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
 
@@ -96,6 +114,7 @@ void Fields::accumul(const double &zz, const Fields &rhs) {
 
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
+    ASSERT(rhs.atlasFieldSet_.has_field(name));
     auto fd = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(name));
 
@@ -116,7 +135,7 @@ double Fields::norm() const {
   double norm = 0.0, s = 0.0;
 
   for (int v = 0; v < vars_.size(); v++) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
 
     for (int i = 0; i < size; i++) {
       if (fd(i, 0) != missing_) {
@@ -143,7 +162,7 @@ double Fields::norm() const {
 void Fields::zero() {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
     fd.assign(0.0);
   }
 }
@@ -226,13 +245,13 @@ void Fields::read(const eckit::Configuration & conf) {
   // scatter to the PEs
   // TODO, dangerous, don't do this?
   static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
-    globalSst, atlasFieldSet_->field("sea_surface_temperature"));
+    globalSst, atlasFieldSet_.field("sea_surface_temperature"));
 
   // apply mask from read in landmask
   if ( geom_.extraFields().has_field("gmask") ) {
     atlas::Field mask_field = geom_.extraFields()["gmask"];
     auto mask = make_view<int, 2>(mask_field);
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     for (int i = 0; i < mask.size(); i++) {
       if (mask(i, 0) == 0)
         fd(i, 0) = missing_;
@@ -335,71 +354,72 @@ void Fields::write(const eckit::Configuration & conf) const {
 
 // ----------------------------------------------------------------------------
 
-  std::shared_ptr<const Geometry> Fields::geometry() const {
-    return geom_;
+void Fields::toFieldSet(atlas::FieldSet & fset) const {
+  const int size = geom_.functionSpace().size();
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    ASSERT(atlasFieldSet_.has_field(name));
+
+    atlas::Field fld = geom_.functionSpace().createField<double>(
+                        atlas::option::levels(1) |
+                        atlas::option::name(name));
+    fld.metadata().set("interp_type", "default");
+
+    auto fd  = make_view<double, 2>(fld);
+    auto fd2 = make_view<double, 2>(atlasFieldSet_.field(name));
+    for (int j = 0; j < size; j++)
+      fd(j, 0) = fd2(j, 0);
+
+    fset.add(fld);
   }
+}
 
 // ----------------------------------------------------------------------------
 
-  std::shared_ptr<atlas::FieldSet> Fields::atlasFieldSet() const {
-    return atlasFieldSet_;
-  }
+void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
+  const int size = geom_.functionSpace().size();
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    ASSERT(fset.has_field(name));
 
-// ----------------------------------------------------------------------------
+    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd_in = make_view<double, 2>(fset.field(name));
 
-  void Fields::setAtlas(atlas::FieldSet * fs) const {
-    for (int v = 0; v < vars_.size(); v++) {
-      fs->add((*atlasFieldSet_)[v]);
+    for (int j = 0; j < size; j++) {
+      if (fd(j, 0) == missing_ || fd_in(j, 0) == missing_)
+        fd(j, 0) = missing_;
+      else
+        fd(j, 0) += fd_in(j, 0);
     }
   }
 
-// ----------------------------------------------------------------------------
-
-  void Fields::toAtlas(atlas::FieldSet * fs_to) const {
-    const int size = geom_->atlasFunctionSpace()->size();
-
-    // Ligang: you will have segment fault with following delete/new code.
-    // if (fs_to)
-    //   delete fs_to;
-    // fs_to = new atlas::FieldSet();
-
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var_name = vars_[i];
-      if (!fs_to->has_field(var_name)) {
-        atlas::Field fld_to = geom_->atlasFunctionSpace()->createField<double>(
-                 atlas::option::levels(1) |
-                 atlas::option::name(var_name));
-        fs_to->add(fld_to);
-      }
-      auto fd_to = make_view<double, 2>(fs_to->field(var_name));
-
-      auto fd    = make_view<double, 2>(atlasFieldSet_->field(var_name));
-      for (int j = 0; j < size; j++)
-        fd_to(j, 0) = fd(j, 0);
-    }
-  }
+  // TODO adjoint halo exchange
+  // atlasFieldSet_.adjointHaloExchange();
+}
 
 // ----------------------------------------------------------------------------
 
-  void Fields::fromAtlas(atlas::FieldSet * fs_from) {
-    const int size = geom_->atlasFunctionSpace()->size();
+void Fields::fromFieldSet(const atlas::FieldSet & fset) {
+  const int size = geom_.functionSpace().size();
+  for (int v = 0; v < vars_.size(); v++) {
+    std::string name = vars_[v];
+    ASSERT(fset.has_field(name));
 
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var_name = vars_[i];
+    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd_in = make_view<double, 2>(fset.field(name));
 
-      auto fd      = make_view<double, 2>(atlasFieldSet_->field(var_name));
-      auto fd_from = make_view<double, 2>(fs_from->field(var_name));
-      for (int j = 0; j < size; j++)
-        fd(j, 0) = fd_from(j, 0);
+    for (int j = 0; j < size; j++) {
+      fd(j, 0) = fd_in(j, 0);
     }
   }
+}
 
 // ----------------------------------------------------------------------------
 
 void Fields::print(std::ostream & os) const {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
     double mean = 0.0, sum = 0.0,
           min = std::numeric_limits<double>::max(),
           max = std::numeric_limits<double>::min();

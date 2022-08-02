@@ -36,6 +36,7 @@ namespace umdsst {
            const util::DateTime &);
     Fields(const Fields &);
     ~Fields() {}
+    void updateFields(const oops::Variables &) ;
 
     // math operators
     Fields & operator =(const Fields &);
@@ -62,9 +63,11 @@ namespace umdsst {
     // std::shared_ptr<atlas::FieldSet> atlasFieldSet() const;
     // std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
+    const Geometry & geometry() const { return geom_; }
+    const util::DateTime & time() const { return time_; }
 
     // atlas interfaces
-    void toFieldSet(atlas::FieldSet & fset) const {fset = atlasFieldSet_;}
+    void toFieldSet(atlas::FieldSet &) const;
     void toFieldSetAD(const atlas::FieldSet &);
     void fromFieldSet(const atlas::FieldSet &);
 

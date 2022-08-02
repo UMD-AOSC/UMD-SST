@@ -114,26 +114,26 @@ endfunction()
 # TODO: uncomment all of these tests as the appropriate interfaces are implemented
 #================================================================================
 
-   ecbuild_add_test(
-     TARGET  test_umdsst_geometry
-     SOURCES executables/TestGeometry.cc
-     ARGS    testinput/geometry.yml
-     MPI     ${MPI_PES}
-     LIBS    umdsst )
+ecbuild_add_test(
+  TARGET  test_umdsst_geometry
+  SOURCES executables/TestGeometry.cc
+  ARGS    testinput/geometry.yml
+  MPI     ${MPI_PES}
+  LIBS    umdsst )
 
-   ecbuild_add_test(
-     TARGET  test_umdsst_state
-     SOURCES executables/TestState.cc
-     ARGS    testinput/state.yml
-     MPI     ${MPI_PES}
-     LIBS    umdsst )
+ecbuild_add_test(
+  TARGET  test_umdsst_state
+  SOURCES executables/TestState.cc
+  ARGS    testinput/state.yml
+  MPI     ${MPI_PES}
+  LIBS    umdsst )
 
-   ecbuild_add_test(
-     TARGET  test_umdsst_increment
-     SOURCES executables/TestIncrement.cc
-     ARGS    testinput/increment.yml
-     MPI     ${MPI_PES}
-     LIBS    umdsst )
+ecbuild_add_test(
+  TARGET  test_umdsst_increment
+  SOURCES executables/TestIncrement.cc
+  ARGS    testinput/increment.yml
+  MPI     ${MPI_PES}
+  LIBS    umdsst )
 
 #  ecbuild_add_test(
 #    TARGET  test_umdsst_modelauxcontrol
@@ -163,13 +163,13 @@ endfunction()
     MPI     ${MPI_PES}
     LIBS    umdsst )
 
-   ecbuild_add_test(
-     TARGET  test_umdsst_errorcovariance
-     SOURCES executables/TestErrorCovariance.cc
-     ARGS    testinput/errorcovariance.yml
-     MPI     ${MPI_PES}
-     LIBS    umdsst
-     TEST_DEPENDS test_umdsst_staticbinit)
+ecbuild_add_test(
+  TARGET  test_umdsst_errorcovariance
+  SOURCES executables/TestErrorCovariance.cc
+  ARGS    testinput/errorcovariance.yml
+  MPI     ${MPI_PES}
+  LIBS    umdsst
+  TEST_DEPENDS test_umdsst_staticbinit)
 
 #  ecbuild_add_test(
 #    TARGET  test_umdsst_modelauxcovariance
@@ -190,17 +190,17 @@ endfunction()
 # Test of executables
 #================================================================================
 
-  umdsst_exe_test( NAME hofx3d
-                   EXE  umdsst_hofx3d.x )
+umdsst_exe_test( NAME hofx3d
+                  EXE  umdsst_hofx3d.x )
 
-  umdsst_exe_test( NAME staticbinit
-                   EXE  umdsst_staticbinit.x
-                   CLEAN Data/bump/* )
+umdsst_exe_test( NAME staticbinit
+                  EXE  umdsst_staticbinit.x
+                  CLEAN Data/bump/* )
 
-  umdsst_exe_test( NAME dirac
-                   EXE  umdsst_dirac.x
-                   TEST_DEPENDS test_umdsst_staticbinit )
+umdsst_exe_test( NAME dirac
+                  EXE  umdsst_dirac.x
+                  TEST_DEPENDS test_umdsst_staticbinit )
 
-  umdsst_exe_test( NAME var
-                   EXE  umdsst_var.x
-                   TEST_DEPENDS test_umdsst_staticbinit )
+umdsst_exe_test( NAME var
+                  EXE  umdsst_var.x
+                  TEST_DEPENDS test_umdsst_staticbinit )

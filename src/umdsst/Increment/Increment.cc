@@ -61,9 +61,6 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator =(const Increment &other) {
-    // Ligang: Do we assume the geom_ and vars_ are the same, (so they are not
-    // empty)? For now yes, as all of the constructors allocate atlasFieldSet.
-    // so just assign the values of FieldSet. same for other math operators.
     Fields::operator=(other);
     return *this;
   }
@@ -93,7 +90,7 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator *=(const double &zz) {
-    auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     const int size = geom_.functionSpace().size();
 
     for (int j = 0; j < size; j++)
@@ -225,7 +222,7 @@ namespace umdsst {
 
     const int sz = fspace.size();
 
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     for (int i = 0; i < dir_size; i++) {
       // Ligang: 2D to 1D global_index, the 1D global_index starts from 1, which
       // is normally oriented to user; while 1D remote_index and the 2D

@@ -79,17 +79,10 @@ Geometry::Geometry(const eckit::Configuration & conf,
 
 // ----------------------------------------------------------------------------
 
-  Geometry::Geometry(const Geometry & other) : comm_(other.comm_) {
-    atlasFunctionSpace_.reset(new
-      atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
-      atlas::option::halo(0)));
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-//  atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
-    for (int i = 0; i < other.atlasFieldSet()->size(); i++) {
-      atlasFieldSet_->add((*other.atlasFieldSet())[i]);
-    }
-  }
+Geometry::Geometry(const Geometry & other)
+    : comm_(other.comm_) {
+  ASSERT(1==2);
+}
 
 // ----------------------------------------------------------------------------
 
@@ -149,10 +142,10 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   atlas::Field fld = functionSpace().createField<int>(
                      atlas::option::levels(1) |
                      atlas::option::name("gmask"));
-  extraFields_->add(fld);
+  extraFields_.add(fld);
   // TODO, dangerous, don't do this?
   static_cast<atlas::functionspace::StructuredColumns>(functionSpace()).scatter(
-    globalLandMask, extraFields_->field("gmask"));
+    globalLandMask, extraFields_.field("gmask"));
 }
 
 // ----------------------------------------------------------------------------
@@ -169,7 +162,7 @@ void Geometry::print(std::ostream & os) const {
   size_t nMaskedLand = 0;
   size_t nUnmaskedOcean = 0;
   const int nSize = functionSpace().size();
-  auto fd = atlas::array::make_view<int, 2>(extraFields_->field("gmask"));
+  auto fd = atlas::array::make_view<int, 2>(extraFields_.field("gmask"));
   for (size_t j = 0; j < nSize; j++) {
     if (fd(j, 0) == 1) {
       nUnmaskedOcean += 1;
@@ -199,7 +192,7 @@ void Geometry::readRossbyRadius(const std::string & filename) {
 
   atlas::Field field = interpToGeom(lonlat, vals);
   field.rename("rossby_radius");
-  extraFields_->add(field);
+  extraFields_.add(field);
 }
 
 // ----------------------------------------------------------------------------
@@ -283,12 +276,8 @@ void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
 
 // ----------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
-  std::vector<size_t> lvls;
-  for (size_t i; i < vars.size(); i++) {
-    // TODO get the actual number of levels
-    lvls.push_back(1);
-  }
-
+  std::vector<size_t> lvls (vars.size(), 1);
+  // TODO get the actual number of levels
   return lvls;
 }
 

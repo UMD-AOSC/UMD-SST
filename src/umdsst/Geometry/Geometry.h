@@ -75,6 +75,5 @@ namespace umdsst {
     atlas::functionspace::StructuredColumns functionSpace_;
     atlas::functionspace::StructuredColumns functionSpaceIncHalo_;
     atlas::FieldSet extraFields_;
-    atlas::util::IndexKDTree localTree_[2];
   };
 }  // namespace umdsst

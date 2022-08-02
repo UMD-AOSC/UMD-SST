@@ -30,33 +30,40 @@ State::State(const Geometry & geom, const eckit::Configuration & conf)
 
 // ----------------------------------------------------------------------------
 
-  State::State(const Geometry & geom, const oops::Variables & vars,
-               const util::DateTime & time)
-    : Fields(geom, vars, time) {}
+State::State(const Geometry & geom, const oops::Variables & vars,
+              const util::DateTime & time)
+  : Fields(geom, vars, time) {}
 
 // ----------------------------------------------------------------------------
 
-  State::State(const Geometry & geom, const State & other)
-    : State(other) {
-    // Change state resolution, normally used for interpolation.
-    // For now, just copy without interpolation
-  }
+State::State(const Geometry & geom, const State & other)
+  : State(other) {
+  // Change state resolution, normally used for interpolation.
+  // For now, just copy without interpolation
+}
 
 // ----------------------------------------------------------------------------
 
-  State::State(const State & other)
-    : Fields(other) {}
+State::State(const State & other)
+  : Fields(other) {}
 
 // ----------------------------------------------------------------------------
 
-  State::~State() {}
+State::~State() {}
 
 // ----------------------------------------------------------------------------
 
-  State & State::operator+=(const Increment & dx) {
-    Fields::operator+=(dx);
-    return *this;
-  }
+State & State::operator+=(const Increment & dx) {
+  Fields::operator+=(dx);
+  return *this;
+}
+
+// ----------------------------------------------------------------------------
+
+State & State::operator=(const State & xx) {
+  Fields::operator=(xx);
+  return *this;
+}
 
 // ----------------------------------------------------------------------------
 

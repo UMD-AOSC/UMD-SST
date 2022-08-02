@@ -46,9 +46,10 @@ namespace umdsst {
           const util::DateTime &);
     State(const Geometry &, const State &);
     State(const State &);
-    ~State();
+    virtual ~State();
 
     // wrappers of methods that are fully implemented in Fields
+    State & operator=(const State &);
     State & operator+=(const Increment &);
   };
 }  // namespace umdsst
