@@ -158,8 +158,11 @@ umdsst_add_test( NAME modelauxcontrol
                  SRC TestModelAuxControl.cc
                  CFG modelaux.yml )
 
+# umdsst_add_test( NAME getvalues
+#                  SRC TestGetValues.cc )
 
-#    ecbuild_add_test(
+
+#    ecbui  ld_add_test(
 #      TARGET  test_umdsst_lineargetvalues
 #      SOURCES executables/TestLinearGetValues.cc
 #      ARGS    testinput/lineargetvalues.yml
@@ -200,17 +203,16 @@ umdsst_add_test( NAME modelauxcontrol
 # Test of executables
 #================================================================================
 
-# umdsst_exe_test( NAME hofx3d
-#                   EXE  umdsst_hofx3d.x )
+umdsst_add_test( NAME hofx3d
+                 EXE  umdsst_hofx3d.x )
 
-# umdsst_exe_test( NAME staticbinit
-#                   EXE  umdsst_staticbinit.x
-#                   CLEAN Data/bump/* )
+umdsst_add_test( NAME staticbinit
+                 EXE  umdsst_staticbinit.x )
 
-# umdsst_exe_test( NAME dirac
-#                   EXE  umdsst_dirac.x
-#                   TEST_DEPENDS test_umdsst_staticbinit )
+umdsst_add_test( NAME dirac
+                 EXE  umdsst_dirac.x
+                 TEST_DEPENDS test_umdsst_staticbinit )
 
-# umdsst_exe_test( NAME var
-#                   EXE  umdsst_var.x
-#                   TEST_DEPENDS test_umdsst_staticbinit )
+umdsst_add_test( NAME var
+                 EXE  umdsst_var.x
+                 TEST_DEPENDS test_umdsst_staticbinit )
