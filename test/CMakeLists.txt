@@ -150,19 +150,14 @@ umdsst_add_test( NAME geometry
 
 umdsst_add_test( NAME state
                  SRC TestState.cc )
-# ecbuild_add_test(
-#   TARGET  test_umdsst_increment
-#   SOURCES executables/TestIncrement.cc
-#   ARGS    testinput/increment.yml
-#   MPI     ${MPI_PES}
-#   LIBS    umdsst )
 
-#  ecbuild_add_test(
-#    TARGET  test_umdsst_modelauxcontrol
-#    SOURCES executables/TestModelAuxControl.cc
-#    ARGS    testinput/modelaux.yml
-#    MPI     ${MPI_PES}
-#    LIBS    umdsst )
+umdsst_add_test( NAME increment
+                 SRC TestIncrement.cc )
+
+umdsst_add_test( NAME modelauxcontrol
+                 SRC TestModelAuxControl.cc
+                 CFG modelaux.yml )
+
 
 #    ecbuild_add_test(
 #      TARGET  test_umdsst_lineargetvalues

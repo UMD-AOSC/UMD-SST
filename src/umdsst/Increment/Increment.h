@@ -43,6 +43,9 @@ namespace umdsst {
     Increment(const Increment &);
     ~Increment();
 
+    // accessors
+    std::vector<double> rmsByLevel(const std::string &) const;
+
     // wrappers of methods that are fully implemented in Fields
     Increment & operator+=(const Increment &);
 

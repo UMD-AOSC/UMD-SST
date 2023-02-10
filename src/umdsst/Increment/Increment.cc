@@ -60,6 +60,13 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
+  std::vector<double> Increment::rmsByLevel(const std::string & varname) const {
+    throw eckit::NotImplemented("umdsst::Increment::rmsByLevel not implemented yet",
+                                Here());
+  }
+
+// ----------------------------------------------------------------------------
+
   Increment & Increment::operator =(const Increment &other) {
     Fields::operator=(other);
     return *this;
