@@ -20,29 +20,16 @@ cost function:
     kelvin: true
 
   background error:
-    # covariance model: SABER
-    # saber blocks:
-    # - saber block name: ID
-    #   input variables: *vars
-    #   output variables: *vars
-    covariance model: umdsstCovar
-    analysisVariables: *vars
-    bump:
-      verbosity: main
-      datadir: data_generated/staticbinit
-      load_nicas_local: true
-      strategy: specific_univariate
-      prefix: bump_sst
-
-      # mask_check: 1
-      # network: 1
-
-
-      # method: cor
-      # load_nicas: 1
-
-      # mpicom: 2
-
+    covariance model: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      bump:
+        load_nicas_local: true
+        datadir: data_generated/staticbinit
+        strategy: specific_univariate
+        prefix: bump_sst
+        # mask_check: 1
+        # network: 1
     # variable changes:
     # - variable change: umdsstStdDev
     #   input variables: *vars

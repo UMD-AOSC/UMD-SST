@@ -13,21 +13,16 @@ geometry:
 #   filename: Data/19850101_regridded_sst_1x1.nc
 
 background error:
-  covariance model: umdsstCovar
-  bump:
-    verbosity: main
-    datadir: data_generated/staticbinit
-    load_nicas_local: true
-    strategy: specific_univariate
-    prefix: bump_sst
-
-    # mask_check: 1
-    # network: 1
-
-    # method: cor
-    # load_nicas: 1
-
-    # mpicom: 2
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    bump:
+      datadir: data_generated/staticbinit
+      load_nicas_local: true
+      strategy: specific_univariate
+      prefix: bump_sst
+      # mask_check: 1
+      # network: 1
 
   # variable changes:
   # - variable change: umdsstStdDev
