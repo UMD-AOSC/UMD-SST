@@ -11,7 +11,7 @@ cmake_minimum_required( VERSION 3.12 )
 find_package( ecbuild 3.6 REQUIRED)
 
 # project name / version
-project( umdsst-bundle VERSION 2023.2.0 LANGUAGES C CXX Fortran )
+project( genericMarine-bundle VERSION 2023.2.0 LANGUAGES C CXX Fortran )
 
 include( ecbuild_bundle )
 ecbuild_bundle_initialize()
@@ -42,6 +42,6 @@ ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda/saber.git"
 ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda/ioda.git"            UPDATE TAG 2.4.0 )
 #ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda/ioda-converters.git" UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda/ufo.git"             UPDATE TAG 1.5.0 )
-ecbuild_bundle( PROJECT umdsst          SOURCE ../)
+ecbuild_bundle( PROJECT genericMarine   SOURCE ../)
 
 ecbuild_bundle_finalize()

@@ -1,4 +1,4 @@
-list( APPEND umdsst_test_input
+list( APPEND genericmarine_test_input
   testinput/errorcovariance.yml
   testinput/geometry.yml
   testinput/getvalues.yml
@@ -13,14 +13,14 @@ list( APPEND umdsst_test_input
   testinput/var.yml
   )
 
-list( APPEND umdsst_test_ref
+list( APPEND genericmarine_test_ref
   testref/hofx3d.ref
   testref/dirac.ref
   testref/staticbinit.ref
   testref/var.ref
   )
 
-list( APPEND umdsst_test_data
+list( APPEND genericmarine_test_data
   Data/19850101_regridded_sst_1x1.nc
   Data/landmask_1x1.nc
   Data/obs_sst.nc
@@ -32,7 +32,7 @@ list( APPEND umdsst_test_data
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
-foreach(FILENAME ${umdsst_test_input} ${umdsst_test_ref})
+foreach(FILENAME ${genericmarine_test_input} ${genericmarine_test_ref})
     execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
            ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
            ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
@@ -46,27 +46,27 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data_generated)
 
 
 # number of PEs to use for MPI enabled tests.
-set( UMDSST_TESTS_MAX_MPI 1)
+set( GENERICMARINE_TESTS_MAX_MPI 1)
 
 
 #---------------------------------------------------------------------------------------------------
-# The following is a wrapper to simplify the generation of tests of the umdsst
+# The following is a wrapper to simplify the generation of tests of the genericmarine
 # executables. There are two types of tests:
-#  1) umdsst executables (EXE must be given)
+#  1) genericmarine executables (EXE must be given)
 #  2) interface tests  (SRC must be given)
 #
 # Arguments:
-#  NAME      - the name of the test (after test_umdsst is prepended), as well
+#  NAME      - the name of the test (after test_genericmarine is prepended), as well
 #              as the base name of the input confg file
 #  EXE       - name of executable to be used.
 #  SRC       - The name of the unit test source file to compile
 #  CFG       - The name of the yaml file, if the default testinput/${NAME}.yaml
 #              is not to be used
-#  MPI       - The number of MPI PEs to use. If not specified, ${UMDSST_TESTS_MAX_MPI}
+#  MPI       - The number of MPI PEs to use. If not specified, ${GENERICMARINE_TESTS_MAX_MPI}
 #              will be used
 # TEST_DEPENDS - list of tests this test depends on
 #---------------------------------------------------------------------------------------------------
-function(umdsst_add_test)
+function(genericmarine_add_test)
   # parse the passed arguments
   set(prefix     ARG)
   set(novals     NOCOMPARE NOTRAPFPE)
@@ -92,7 +92,7 @@ function(umdsst_add_test)
 
 
   # MPI PEs
-  set( MPI ${UMDSST_TESTS_MAX_MPI} )
+  set( MPI ${GENERICMARINE_TESTS_MAX_MPI} )
   if ( ARG_MPI )
     set( MPI ${ARG_MPI})
   endif()
@@ -115,20 +115,20 @@ function(umdsst_add_test)
   # Are we building a unit test / or running a soca executable?
   if ( ARG_SRC )
     # building a unit test
-    ecbuild_add_test( TARGET  test_umdsst_${ARG_NAME}
+    ecbuild_add_test( TARGET  test_genericmarine_${ARG_NAME}
                       SOURCES executables/${ARG_SRC}
                       ARGS    ${CONFIG_FILE}
-                      LIBS    umdsst
+                      LIBS    genericmarine
                       MPI     ${MPI}
                       ENVIRONMENT ${TRAPFPE_ENV}
                       WORKING_DIRECTORY ${WORKDIR}
                       TEST_DEPENDS ${ARG_TEST_DEPENDS})
-    set( EXE ./test_umdsst_${ARG_NAME})
+    set( EXE ./test_genericmarine_${ARG_NAME})
 
   else()
-    # running a umdsst executable.
+    # running a genericmarine executable.
     set( EXE ${CMAKE_BINARY_DIR}/bin/${ARG_EXE})
-    ecbuild_add_test( TARGET  test_umdsst_${ARG_NAME}
+    ecbuild_add_test( TARGET  test_genericmarine_${ARG_NAME}
                       MPI ${MPI}
                       COMMAND ${EXE}
                       WORKING_DIRECTORY ${WORKDIR}
@@ -145,74 +145,74 @@ endfunction()
 # TODO: uncomment all of these tests as the appropriate interfaces are implemented
 #================================================================================
 
-umdsst_add_test( NAME geometry
+genericmarine_add_test( NAME geometry
                  SRC TestGeometry.cc )
 
-umdsst_add_test( NAME state
+genericmarine_add_test( NAME state
                  SRC TestState.cc )
 
-umdsst_add_test( NAME increment
+genericmarine_add_test( NAME increment
                  SRC TestIncrement.cc )
 
-umdsst_add_test( NAME modelauxcontrol
+genericmarine_add_test( NAME modelauxcontrol
                  SRC TestModelAuxControl.cc
                  CFG modelaux.yml )
 
-# umdsst_add_test( NAME getvalues
+# genericmarine_add_test( NAME getvalues
 #                  SRC TestGetValues.cc )
 
 
 #    ecbui  ld_add_test(
-#      TARGET  test_umdsst_lineargetvalues
+#      TARGET  test_genericmarine_lineargetvalues
 #      SOURCES executables/TestLinearGetValues.cc
 #      ARGS    testinput/lineargetvalues.yml
 #      MPI     ${MPI_PES}
-#      LIBS    umdsst )
+#      LIBS    genericmarine )
 
 #    ecbuild_add_test(
-#     TARGET  test_umdsst_linearvarchange_stddev
+#     TARGET  test_genericmarine_linearvarchange_stddev
 #     SOURCES executables/TestLinearVariableChange.cc
 #     ARGS    testinput/linearvarchange_stddev.yml
 #     MPI     ${MPI_PES}
-#     LIBS    umdsst )
+#     LIBS    genericmarine )
 
 # ecbuild_add_test(
-#   TARGET  test_umdsst_errorcovariance
+#   TARGET  test_genericmarine_errorcovariance
 #   SOURCES executables/TestErrorCovariance.cc
 #   ARGS    testinput/errorcovariance.yml
 #   MPI     ${MPI_PES}
-#   LIBS    umdsst
-#   TEST_DEPENDS test_umdsst_staticbinit)
+#   LIBS    genericmarine
+#   TEST_DEPENDS test_genericmarine_staticbinit)
 
 #  ecbuild_add_test(
-#    TARGET  test_umdsst_modelauxcovariance
+#    TARGET  test_genericmarine_modelauxcovariance
 #    SOURCES executables/TestModelAuxCovariance.cc
 #    ARGS    testinput/modelaux.yml
 #    MPI     ${MPI_PES}
-#    LIBS    umdsst )
+#    LIBS    genericmarine )
 
 #  ecbuild_add_test(
-#    TARGET  test_umdsst_modelauxincrement
+#    TARGET  test_genericmarine_modelauxincrement
 #    SOURCES executables/TestModelAuxIncrement.cc
 #    ARGS    testinput/modelaux.yml
 #    MPI     ${MPI_PES}
-#    LIBS    umdsst )
+#    LIBS    genericmarine )
 
 
 #================================================================================
 # Test of executables
 #================================================================================
 
-umdsst_add_test( NAME hofx3d
-                 EXE  umdsst_hofx3d.x )
+genericmarine_add_test( NAME hofx3d
+                 EXE  genericmarine_hofx3d.x )
 
-umdsst_add_test( NAME staticbinit
-                 EXE  umdsst_staticbinit.x )
+genericmarine_add_test( NAME staticbinit
+                 EXE  genericmarine_staticbinit.x )
 
-umdsst_add_test( NAME dirac
-                 EXE  umdsst_dirac.x
-                 TEST_DEPENDS test_umdsst_staticbinit )
+genericmarine_add_test( NAME dirac
+                 EXE  genericmarine_dirac.x
+                 TEST_DEPENDS test_genericmarine_staticbinit )
 
-umdsst_add_test( NAME var
-                 EXE  umdsst_var.x
-                 TEST_DEPENDS test_umdsst_staticbinit )
+genericmarine_add_test( NAME var
+                 EXE  genericmarine_var.x
+                 TEST_DEPENDS test_genericmarine_staticbinit )

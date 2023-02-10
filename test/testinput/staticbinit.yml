@@ -16,7 +16,7 @@ background:
   filename: data_static/19850101_regridded_sst_1x1.nc
 
 background error:
-  covariance model: umdsstCovar
+  covariance model: genericMarineCovar
   bump:
     verbosity: main
     datadir: data_generated/staticbinit

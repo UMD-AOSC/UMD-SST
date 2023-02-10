@@ -7,14 +7,10 @@ geometry:
   landmask:
     filename: data_static/landmask_1x1.nc
 
-# initial conditions:
-#   state variables: &vars [sea_surface_temperature]
-#   date: 2018-04-15T00:00:00Z
-#   filename: Data/19850101_regridded_sst_1x1.nc
-
 background error:
   covariance model: SABER
   saber central block:
+    # The correlation operator
     saber block name: BUMP_NICAS
     bump:
       datadir: data_generated/staticbinit
@@ -23,12 +19,13 @@ background error:
       prefix: bump_sst
       # mask_check: 1
       # network: 1
-
-  # variable changes:
-  # - variable change: umdsstStdDev
-  #   input variables: *vars
-  #   output variables: *vars
-  #   fixed: 1.0
+  # saber outer blocks:
+  # - saber block name: StdDev
+  #   input fields:
+  # - parameter: StdDev
+  #   file:
+  #     date: 2010-01-01T12:00:00Z
+  #     filename: data_static/landmask_1x1.nc
 
 dirac:
   date: 2010-01-01T12:00:00Z
