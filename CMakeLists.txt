@@ -7,9 +7,9 @@
 # UMDSST
 ################################################################################
 cmake_minimum_required( VERSION 3.12 )
-project( umdsst VERSION 2021.5.0 LANGUAGES C CXX Fortran)
+project( umdsst VERSION 2023.2.0 LANGUAGES C CXX Fortran)
 
-find_package(ecbuild 3.3.2 QUIET)
+find_package( ecbuild 3.6 REQUIRED)
 include( ecbuild_system NO_POLICY_SCOPE )
 ecbuild_declare_project()
 
@@ -24,10 +24,10 @@ find_package( NetCDF REQUIRED COMPONENTS Fortran )
 find_package( eckit  1.11.6   REQUIRED)
 find_package( fckit  0.7.0    REQUIRED)
 find_package( atlas  0.20.2   REQUIRED)
-find_package( oops   1.0.0    REQUIRED)
-find_package( saber  1.0.0    REQUIRED)
-find_package( ioda   1.0.0    REQUIRED)
-find_package( ufo    1.0.0    REQUIRED)
+find_package( oops   1.5.0    REQUIRED)
+find_package( saber  1.5.0    REQUIRED)
+find_package( ioda   2.4.0    REQUIRED)
+find_package( ufo    1.5.0    REQUIRED)
 
 
 ################################################################################

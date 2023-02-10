@@ -51,6 +51,9 @@ namespace umdsst {
     const eckit::mpi::Comm & getComm() const {return comm_;}
     void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
     std::vector<size_t> variableSizes(const oops::Variables &) const;
+    // These are needed for the GeometryIterator Interface for LETKF
+    // TODO(template_impl) GeometryIterator begin() const;
+    // TODO(template_impl) GeometryIterator end() const;
 
     // atlas interfaces
     const atlas::FunctionSpace & functionSpace() const {return functionSpaceIncHalo_;}
@@ -58,9 +61,8 @@ namespace umdsst {
     const atlas::FieldSet & extraFields() const {return extraFields_;}
     atlas::FieldSet & extraFields() {return extraFields_;}
 
-    // These are needed for the GeometryIterator Interface
-    // TODO(template_impl) GeometryIterator begin() const;
-    // TODO(template_impl) GeometryIterator end() const;
+    // miscellaneous
+    bool levelsAreTopDown() const {return true;}
 
    private:
     // private helper functions

@@ -51,7 +51,7 @@ Fields::Fields(const Fields & other)
 void Fields::updateFields(const oops::Variables & vars) {
   atlas::FieldSet fset;
   for (int v = 0; v < vars.size(); v++) {
-    if (atlasFieldSet_.has_field(vars[v])) {
+    if (atlasFieldSet_.has(vars[v])) {
       // field already exists, copy over
       fset.add(atlasFieldSet_.field(vars[v]));
     } else {
@@ -93,7 +93,7 @@ Fields & Fields::operator+=(const Fields &other) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    ASSERT(other.atlasFieldSet_.has_field(name));
+    ASSERT(other.atlasFieldSet_.has(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
 
@@ -114,7 +114,7 @@ void Fields::accumul(const double &zz, const Fields &rhs) {
 
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    ASSERT(rhs.atlasFieldSet_.has_field(name));
+    ASSERT(rhs.atlasFieldSet_.has(name));
     auto fd = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(name));
 
@@ -248,7 +248,7 @@ void Fields::read(const eckit::Configuration & conf) {
     globalSst, atlasFieldSet_.field("sea_surface_temperature"));
 
   // apply mask from read in landmask
-  if ( geom_.extraFields().has_field("gmask") ) {
+  if ( geom_.extraFields().has("gmask") ) {
     atlas::Field mask_field = geom_.extraFields()["gmask"];
     auto mask = make_view<int, 2>(mask_field);
     auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
@@ -358,7 +358,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    ASSERT(atlasFieldSet_.has_field(name));
+    ASSERT(atlasFieldSet_.has(name));
 
     atlas::Field fld = geom_.functionSpace().createField<double>(
                         atlas::option::levels(1) |
@@ -380,7 +380,7 @@ void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    ASSERT(fset.has_field(name));
+    ASSERT(fset.has(name));
 
     auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_in = make_view<double, 2>(fset.field(name));
@@ -403,7 +403,7 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
-    ASSERT(fset.has_field(name));
+    ASSERT(fset.has(name));
 
     auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_in = make_view<double, 2>(fset.field(name));
